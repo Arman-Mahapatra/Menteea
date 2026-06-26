@@ -271,8 +271,35 @@ ${(newDoc.topics || []).map((topic) => `- **${topic}**`).join("\n")}
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.error || "Failed to receive answer from Gemini API.");
+
+      switch (errData.code) {
+        case "AI_SERVICE_UNAVAILABLE":
+          throw new Error(
+            "Gemini is currently experiencing high demand. Please try again in a few moments."
+          );
+
+        case "RATE_LIMITED":
+          throw new Error(
+            "Too many requests were sent to the AI service. Please wait a few seconds and try again."
+          );
+
+        case "INVALID_REQUEST":
+          throw new Error(
+            "The AI couldn't process this request. Try rephrasing your question."
+          );
+
+        case "INTERNAL_SERVER_ERROR":
+          throw new Error(
+            "An unexpected server error occurred. Please try again."
+          );
+
+        default:
+          throw new Error(
+            errData.error ||
+              "Failed to receive a response from the AI service."
+          );
       }
+    }
 
       const data = await res.json();
 
@@ -285,9 +312,15 @@ ${(newDoc.topics || []).map((topic) => `- **${topic}**`).join("\n")}
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
-    } catch (err: any) {
-      console.error(err);
-      setErrorAlert(err.message || "An unexpected error occurred during chat reasoning.");
+    } catch (err: unknown) {
+      console.error("Chat Error:", err);
+
+      const message =
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred while processing your request.";
+
+      setErrorAlert(message);
     } finally {
       setIsLoading(false);
     }

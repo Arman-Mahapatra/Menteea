@@ -225,8 +225,28 @@ Return your response strictly as a JSON object matching this schema:
 
     res.json(JSON.parse(resultText));
   } catch (error: any) {
-    console.error("Chat error:", error);
-    res.status(500).json({ error: error.message || "Failed to generate AI response." });
+    console.error("Gemini Error:", error);
+
+    const status = error?.status || error?.code;
+
+    if (status === 503) {
+        return res.status(503).json({
+            code: "AI_SERVICE_UNAVAILABLE",
+            error: "The AI service is temporarily unavailable. Please try again in a few moments."
+        });
+    }
+
+    if (status === 429) {
+        return res.status(429).json({
+            code: "RATE_LIMITED",
+            error: "Too many requests. Please wait a moment and try again."
+        });
+    }
+
+    return res.status(500).json({
+        code: "INTERNAL_SERVER_ERROR",
+        error: "Something went wrong while processing your request."
+    });
   }
 });
 
