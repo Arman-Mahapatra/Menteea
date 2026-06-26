@@ -1,0 +1,6 @@
+{
+  "name": "Menteea",
+  "description": "An interactive AI-powered workspace to upload PDFs, ask questions, explore ideas, and understand complex research material naturally.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

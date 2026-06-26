@@ -1,0 +1,87 @@
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+:root {
+  --bg-app: #F9F9F8;
+  --bg-surface: #FFFFFF;
+  --bg-secondary: #F2F2F0;
+  --border-custom: #E2E2E0;
+  --text-primary: #1C1917;
+  --text-secondary: #44403C;
+  --text-muted: #78716C;
+  --scroll-thumb: #E2E2E0;
+  --scroll-thumb-hover: #C7C7C5;
+}
+
+.dark {
+  --bg-app: #0F1115;
+  --bg-surface: #151821;
+  --bg-secondary: #1C1F29;
+  --border-custom: #2D313C;
+  --text-primary: #F2F2F2;
+  --text-secondary: #B7BCC5;
+  --text-muted: #8A9099;
+  --scroll-thumb: #2D313C;
+  --scroll-thumb-hover: #454B59;
+  
+  /* Force dark system colors for native form controls if any */
+  color-scheme: dark;
+}
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", "Inter", system-ui, -apple-system, sans-serif;
+  --font-serif: "Newsreader", Georgia, serif;
+  --font-display: "Newsreader", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Theme variables mapped to our custom properties */
+  --color-bg-app: var(--bg-app);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-border-custom: var(--border-custom);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+}
+
+/* Base resets & transitions for theme-switching */
+body {
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  transition: background-color 250ms cubic-bezier(0.4, 0, 0.2, 1), color 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-transition {
+  transition-property: background-color, border-color, text-color, fill, stroke, box-shadow;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 250ms;
+}
+
+/* Custom minimal scrollbar styling for modern workspace layout */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border-radius: 9999px;
+  transition: background 250ms;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scroll-thumb-hover);
+}
+
+/* Scrollbar-none utility */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
