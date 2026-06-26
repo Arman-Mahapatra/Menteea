@@ -200,19 +200,10 @@ export default function App() {
     setViewerPageNumber(1);
     setIsLoading(false);
 
-    // Create introductory auto-summary message in the chat
-    const introContent = `### 📄 Analysis of **${newDoc.name}**
-    
-**Core Objective / Purpose:**
-${newDoc.purpose || "Not specified."}
+    // Create introductory lightweight message in the chat (Task 3)
+    const introContent = `✓ Document indexed successfully.
 
-**Key Research Summary:**
-${newDoc.summary || "Summary generation in progress."}
-
-**Primary Topics & Concepts Explained:**
-${(newDoc.topics || []).map((topic) => `- **${topic}**`).join("\n")}
-
-*You can now ask questions specifically about this document or reason across multiple documents together.*`;
+Ready to answer questions.`;
 
     const summaryMsg: ChatMessage = {
       id: Math.random().toString(),
@@ -266,40 +257,42 @@ ${(newDoc.topics || []).map((topic) => `- **${topic}**`).join("\n")}
         body: JSON.stringify({
           messages: updatedMessages,
           selectedDocuments: selectedDocs,
+          selectedDocumentIds: selectedDocs.map((doc) => doc.id),
         }),
       });
 
       if (!res.ok) {
-        const errData = await res.json();
+        let errData;
+        try {
+          errData = await res.json();
+        } catch {
+          throw new Error("Failed to receive a response from the AI service.");
+        }
 
-      switch (errData.code) {
-        case "AI_SERVICE_UNAVAILABLE":
-          throw new Error(
-            "Gemini is currently experiencing high demand. Please try again in a few moments."
-          );
+        const errMessage = errData?.error || "";
 
-        case "RATE_LIMITED":
+        // Task 4: Improve error mapping
+        if (errData?.code === "INVALID_API_KEY" || errMessage.toLowerCase().includes("api key")) {
+          throw new Error("Invalid Gemini API key. Please verify your API key.");
+        }
+        if (
+          errData?.code === "RATE_LIMITED" ||
+          errMessage.toLowerCase().includes("quota") ||
+          errMessage.toLowerCase().includes("limit")
+        ) {
           throw new Error(
-            "Too many requests were sent to the AI service. Please wait a few seconds and try again."
+            "Daily Gemini API quota reached. Please wait for quota reset or use another API key."
           );
+        }
+        if (
+          errData?.code === "AI_SERVICE_UNAVAILABLE" ||
+          errMessage.toLowerCase().includes("unavailable")
+        ) {
+          throw new Error("Gemini is temporarily unavailable. Please try again shortly.");
+        }
 
-        case "INVALID_REQUEST":
-          throw new Error(
-            "The AI couldn't process this request. Try rephrasing your question."
-          );
-
-        case "INTERNAL_SERVER_ERROR":
-          throw new Error(
-            "An unexpected server error occurred. Please try again."
-          );
-
-        default:
-          throw new Error(
-            errData.error ||
-              "Failed to receive a response from the AI service."
-          );
+        throw new Error(errMessage || "An unexpected error occurred while processing your request.");
       }
-    }
 
       const data = await res.json();
 
@@ -531,3 +524,4 @@ ${(newDoc.topics || []).map((topic) => `- **${topic}**`).join("\n")}
     </div>
   );
 }
+

@@ -73,8 +73,12 @@ export default function LibraryPanel({
         setLocalProgress(`Extracting page ${i} of ${numPages}...`);
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const text = textContent.items.map((item: any) => item.str).join(" ");
-        pagesData.push({ pageNumber: i, text: text.trim() });
+        const text = textContent.items
+          .map((item: any) => (item && typeof item.str === "string" ? item.str : ""))
+          .join(" ")
+          .replace(/\s+/g, " ")
+          .trim();
+        pagesData.push({ pageNumber: i, text: text });
       }
 
       // Store binary buffer globally in a window map so the PDF viewer can read it without hitting localStorage quotas
@@ -107,8 +111,10 @@ export default function LibraryPanel({
           method: "POST",
           headers,
           body: JSON.stringify({
+            documentId: docId,
             documentName: file.name,
             pages: pagesData,
+            size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`
           }),
         });
 
