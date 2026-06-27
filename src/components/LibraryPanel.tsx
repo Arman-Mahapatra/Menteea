@@ -96,7 +96,8 @@ export default function LibraryPanel({
         summary: "An automatic summary could not be generated for this document. However, all pages are fully indexed, and you can start asking questions about it in the chat space.",
         topics: ["Document Research"],
         purpose: "Document loaded successfully for page review and chat context.",
-        suggestions: ["Give me an overview of this document", "What are the main key points?"]
+        suggestions: ["Give me an overview of this document", "What are the main key points?"],
+        summaryError: undefined as string | undefined
       };
 
       try {
@@ -119,12 +120,30 @@ export default function LibraryPanel({
         });
 
         if (response.ok) {
-          summaryResult = await response.json();
+          const data = await response.json();
+          summaryResult = {
+            summary: data.summary || summaryResult.summary,
+            topics: data.topics || summaryResult.topics,
+            purpose: data.purpose || summaryResult.purpose,
+            suggestions: data.suggestions || summaryResult.suggestions,
+            summaryError: data.summaryError || undefined
+          };
         } else {
           console.warn("Summarization API responded with an error, falling back to basic details.");
+          try {
+            const data = await response.json();
+            if (data?.error) {
+              summaryResult.summaryError = data.error;
+            } else {
+              summaryResult.summaryError = "AI generation is temporarily unavailable due to a service error.";
+            }
+          } catch {
+            summaryResult.summaryError = "AI generation is temporarily unavailable due to a service error.";
+          }
         }
       } catch (sumErr) {
         console.error("Failed to fetch document summary:", sumErr);
+        summaryResult.summaryError = "Network error during AI summary generation.";
       }
 
       // Formulate our final DocumentFile structure
@@ -136,6 +155,7 @@ export default function LibraryPanel({
         topics: summaryResult.topics,
         purpose: summaryResult.purpose,
         initialSuggestions: summaryResult.suggestions,
+        summaryError: summaryResult.summaryError,
         uploadTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         isSelected: true, // Automatically select for chat
         size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,

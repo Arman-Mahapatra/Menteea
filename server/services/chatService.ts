@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { logger } from "../utils/logger";
 import { buildChatPrompt, buildSystemInstruction } from "../rag/promptBuilder";
+import { RetrievalService } from "./retrievalService";
 
 export class ChatService {
   private static instance: ChatService;
@@ -63,10 +64,43 @@ export class ChatService {
     apiKey: string,
     context: string,
     history: string,
-    question: string
+    question: string,
+    selectedDocumentIds?: string[]
   ): Promise<{ text: string; suggestions: string[] }> {
     logger.info("Generating chat response via Gemini API");
-    const prompt = buildChatPrompt({ context, history, question });
+    
+    let activeContext = context;
+    let chunkCount = 0;
+    let docCount = 0;
+
+    if (selectedDocumentIds && selectedDocumentIds.length > 0) {
+      logger.info(`[ChatService] RAG Lite triggered. Retrieving chunks for question from selected documents: [${selectedDocumentIds.join(", ")}]`);
+      try {
+        const retrievalService = RetrievalService.getInstance();
+        const matchedChunks = await retrievalService.retrieveRelevantContext(question, selectedDocumentIds, 5, apiKey);
+        
+        chunkCount = matchedChunks.length;
+        const uniqueDocs = new Set(matchedChunks.map(c => c.documentId));
+        docCount = uniqueDocs.size;
+
+        logger.info(`[ChatService] Retrieved ${chunkCount} chunks from ${docCount} selected documents`);
+
+        if (matchedChunks.length > 0) {
+          activeContext = "Here is the context retrieved from the selected documents:\n\n";
+          matchedChunks.forEach((chunk) => {
+            activeContext += `<document name="${chunk.documentName}">\n`;
+            activeContext += `<page number="${chunk.pageNumber}">\n${chunk.text}\n</page>\n`;
+            activeContext += `</document>\n\n`;
+          });
+        } else {
+          activeContext = "No relevant document chunks could be found.";
+        }
+      } catch (err) {
+        logger.error("[ChatService] Error during context retrieval, falling back to full context:", err);
+      }
+    }
+
+    const prompt = buildChatPrompt({ context: activeContext, history, question });
     const systemInstruction = buildSystemInstruction();
     const ai = this.getGenAI(apiKey);
 
@@ -101,7 +135,14 @@ export class ChatService {
       throw new Error("No response from Gemini API.");
     }
 
-    return JSON.parse(resultText);
+    const parsed = JSON.parse(resultText);
+
+    if (selectedDocumentIds && selectedDocumentIds.length > 0) {
+      const infoHeader = `*Retrieved ${chunkCount} relevant chunks from ${docCount} selected documents.*\n\n`;
+      parsed.text = infoHeader + parsed.text;
+    }
+
+    return parsed;
   }
 
   /**

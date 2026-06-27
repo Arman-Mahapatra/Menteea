@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { ChatService } from "../services/chatService";
 import { DocumentService } from "../services/documentService";
+import { chunkDocument } from "../rag/chunker";
+import { EmbeddingService } from "../services/embeddingService";
+import { VectorStore } from "../services/vectorStore";
 import { logger } from "../utils/logger";
 import { handleAIError } from "../utils/errorHandler";
 import { Document } from "../models/types";
@@ -44,8 +47,8 @@ export async function handleChat(req: Request, res: Response) {
     // Fallback/Synchronization: If any selected documents are not yet in the backend store
     // (e.g. following a server restart), we gracefully register them from the client payload
     if (resolvedDocs.length < docIdsToLookup.length && Array.isArray(selectedDocuments)) {
-      selectedDocuments.forEach((clientDoc: any) => {
-        if (!clientDoc || !clientDoc.id) return;
+      for (const clientDoc of selectedDocuments) {
+        if (!clientDoc || !clientDoc.id) continue;
         const alreadyResolved = resolvedDocs.some((d) => d.id === clientDoc.id);
         if (!alreadyResolved) {
           logger.info(`[handleChat] Synchronizing client document to single source of truth: ID=${clientDoc.id}`);
@@ -64,8 +67,21 @@ export async function handleChat(req: Request, res: Response) {
           };
           documentService.storeDocument(docObj);
           resolvedDocs.push(docObj);
+
+          // Index document chunks on fallback synchronization
+          try {
+            const chunks = chunkDocument(docObj.id, docObj.name, docObj.pages);
+            const embeddingService = EmbeddingService.getInstance();
+            const textsToEmbed = chunks.map(c => c.text);
+            logger.info(`[handleChat] Fallback sync - generating embeddings for ${chunks.length} chunks of document: ${docObj.name}`);
+            const embeddings = await embeddingService.getEmbeddings(textsToEmbed, activeKey);
+            const vectorStore = VectorStore.getInstance();
+            await vectorStore.addChunks(chunks, embeddings);
+          } catch (syncErr) {
+            logger.error(`[handleChat] Failed to index document chunks on sync for ID ${docObj.id}:`, syncErr);
+          }
         }
-      });
+      }
     }
 
     // Format resolved documents into contextual prompt block
@@ -95,7 +111,8 @@ export async function handleChat(req: Request, res: Response) {
       activeKey,
       docsContext,
       formattedHistory,
-      lastMessage
+      lastMessage,
+      docIdsToLookup
     );
 
     return res.json(result);

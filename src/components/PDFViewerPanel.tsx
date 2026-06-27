@@ -17,6 +17,7 @@ interface PDFViewerPanelProps {
   pageNumber: number;
   onPageChange: (page: number) => void;
   totalPages: number;
+  pageText?: string | null;
 }
 
 type ZoomMode = "fit-width" | "fit-page" | "manual";
@@ -27,6 +28,7 @@ export default function PDFViewerPanel({
   pageNumber,
   onPageChange,
   totalPages,
+  pageText,
 }: PDFViewerPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -39,6 +41,7 @@ export default function PDFViewerPanel({
   const [isRendering, setIsRendering] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isTextFallback, setIsTextFallback] = useState<boolean>(false);
 
   // Monitor fullscreen status
   useEffect(() => {
@@ -49,25 +52,41 @@ export default function PDFViewerPanel({
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
+  const loadedDocIdRef = useRef<string | null>(null);
+
   // Load the PDF.js document whenever active documentId changes
   useEffect(() => {
     if (!documentId) {
       setPdfDocument(null);
       setErrorMsg(null);
+      setIsTextFallback(false);
+      loadedDocIdRef.current = null;
+      return;
+    }
+
+    if (loadedDocIdRef.current === documentId && (pdfDocument || isTextFallback)) {
       return;
     }
 
     const loadPdf = async () => {
       setIsRendering(true);
       setErrorMsg(null);
+      setIsTextFallback(false);
       try {
-        const globalBuffers = (window as any)._pdfBuffers;
+        let globalBuffers = (window as any)._pdfBuffers;
         if (!globalBuffers) {
-          throw new Error("No PDF buffer library active in workspace.");
+          (window as any)._pdfBuffers = new Map<string, ArrayBuffer>();
+          globalBuffers = (window as any)._pdfBuffers;
         }
 
         const buffer = globalBuffers.get(documentId);
         if (!buffer) {
+          if (pageText !== undefined) {
+            setIsTextFallback(true);
+            setPdfDocument(null);
+            loadedDocIdRef.current = documentId;
+            return;
+          }
           throw new Error("PDF buffer not found in local session. Try uploading the document again.");
         }
 
@@ -79,6 +98,7 @@ export default function PDFViewerPanel({
         const loadingTask = pdfjsLib.getDocument({ data: buffer.slice(0) });
         const pdf = await loadingTask.promise;
         setPdfDocument(pdf);
+        loadedDocIdRef.current = documentId;
       } catch (err: any) {
         console.error("PDF load error:", err);
         setErrorMsg(err.message || "Failed to load PDF document.");
@@ -88,7 +108,7 @@ export default function PDFViewerPanel({
     };
 
     loadPdf();
-  }, [documentId]);
+  }, [documentId, pageText]);
 
   // Calculate Scale based on Mode
   const calculateScale = async (mode: ZoomMode, doc = pdfDocument, pgNum = pageNumber) => {
@@ -248,7 +268,7 @@ export default function PDFViewerPanel({
         </div>
 
         {/* Center: Page Controls */}
-        {pdfDocument && (
+        {(pdfDocument || isTextFallback) && (
           <div className="flex items-center gap-2 border-l border-r border-border-custom/40 px-3">
             <button
               onClick={handlePrevPage}
@@ -272,8 +292,8 @@ export default function PDFViewerPanel({
           </div>
         )}
 
-        {/* Right: Zoom & Settings */}
-        {pdfDocument && (
+        {/* Right: Zoom & Settings or Fallback Indicator */}
+        {pdfDocument ? (
           <div className="flex items-center gap-1.5 pl-3 flex-1 justify-end">
             {/* Zoom Controls */}
             <div className="flex items-center gap-0.5 border-r border-border-custom/50 pr-2">
@@ -329,7 +349,13 @@ export default function PDFViewerPanel({
               <Expand className="h-4 w-4" />
             </button>
           </div>
-        )}
+        ) : isTextFallback ? (
+          <div className="flex items-center gap-1.5 pl-3 flex-1 justify-end">
+            <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-amber-500 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20">
+              Reader Mode Active
+            </span>
+          </div>
+        ) : null}
       </div>
 
       {/* Main Canvas Viewer Container */}
@@ -356,6 +382,23 @@ export default function PDFViewerPanel({
             <p className="text-xs font-semibold">Viewer Error</p>
             <p className="text-[10px] text-rose-400 mt-1">{errorMsg}</p>
           </div>
+        ) : isTextFallback ? (
+          <div className="max-w-2xl mx-auto my-4 font-serif">
+            {/* Elegant Info Banner */}
+            <div className="flex items-center gap-2 mb-4 p-3 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-sans uppercase tracking-wider">
+              <span>Reader Mode: Extracted text view. Source PDF buffer expired.</span>
+            </div>
+            
+            <div className="relative shadow-md border border-border-custom bg-white dark:bg-[#151821] rounded-md p-8 md:p-12 transition-all duration-200 select-text">
+              <div className="text-xs uppercase tracking-widest text-text-muted font-sans font-bold border-b border-border-custom/40 pb-3 mb-6 flex justify-between select-none">
+                <span>Page {pageNumber}</span>
+                <span className="font-serif italic capitalize">Text Reader</span>
+              </div>
+              <p className="text-text-primary text-sm leading-relaxed whitespace-pre-wrap font-serif">
+                {pageText || "This page has no extracted text content."}
+              </p>
+            </div>
+          </div>
         ) : (
           <div className="mx-auto select-none font-sans" style={{ width: "fit-content" }}>
             <div className="relative shadow-2xl border border-border-custom bg-white dark:bg-[#151821] rounded-sm overflow-hidden p-1.5 transition-all duration-200">
@@ -372,4 +415,3 @@ export default function PDFViewerPanel({
     </div>
   );
 }
-

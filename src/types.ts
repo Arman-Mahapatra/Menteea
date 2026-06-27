@@ -11,6 +11,7 @@ export interface DocumentFile {
   topics?: string[];
   purpose?: string;
   initialSuggestions?: string[];
+  summaryError?: string;
   uploadTime: string;
   isSelected: boolean;
   size?: string;

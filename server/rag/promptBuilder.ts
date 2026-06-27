@@ -11,15 +11,22 @@ export interface PromptPayload {
  */
 export function buildChatPrompt({ context, history, question }: PromptPayload): string {
   logger.info("Building chat prompt with context and history");
-  return `Selected Documents Context:
+  return `You are an AI research assistant.
+
+Use ONLY the provided context to answer.
+
+If the answer is not present in the context, say so clearly.
+
+Context:
 ${context}
 
 Conversation History:
 ${history}
 
-Current User Message:
-User: ${question}
-`;
+Question:
+${question}
+
+Answer:`;
 }
 
 /**

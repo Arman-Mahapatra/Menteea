@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { ChatService } from "../services/chatService";
 import { DocumentService } from "../services/documentService";
+import { chunkDocument } from "../rag/chunker";
+import { EmbeddingService } from "../services/embeddingService";
+import { VectorStore } from "../services/vectorStore";
 import { logger } from "../utils/logger";
 import { handleAIError } from "../utils/errorHandler";
 import { Document } from "../models/types";
@@ -44,6 +47,19 @@ export async function handleUpload(req: Request, res: Response) {
       });
     }
 
+    // Index document chunks (Chunk -> Embed -> Store)
+    try {
+      const chunks = chunkDocument(id, documentName, docObj.pages);
+      const embeddingService = EmbeddingService.getInstance();
+      const textsToEmbed = chunks.map(c => c.text);
+      logger.info(`[handleUpload] Generating embeddings for ${chunks.length} chunks of document: ${documentName}`);
+      const embeddings = await embeddingService.getEmbeddings(textsToEmbed, activeKey);
+      const vectorStore = VectorStore.getInstance();
+      await vectorStore.addChunks(chunks, embeddings);
+    } catch (indexErr) {
+      logger.error(`[handleUpload] Failed to index document chunks for ID ${id}:`, indexErr);
+    }
+
     // 4. Summarize consuming the EXACT same extracted text from DocumentService store
     const storedDoc = documentService.getDocument(id);
     if (!storedDoc) {
@@ -55,21 +71,72 @@ export async function handleUpload(req: Request, res: Response) {
       .join("\n\n");
 
     const chatService = ChatService.getInstance();
-    const result = await chatService.generateDocumentSummary(
-      activeKey,
-      documentName,
-      documentContext
-    );
+    let summaryResult = {
+      summary: "An automatic summary could not be generated for this document. However, all pages are fully indexed, and you can start asking questions about it in the chat space.",
+      topics: ["Document Research"],
+      purpose: "Document loaded successfully for page review and chat context.",
+      suggestions: ["Give me an overview of this document", "What are the main key points?"]
+    };
+    let summaryError: string | null = null;
+
+    try {
+      const result = await chatService.generateDocumentSummary(
+        activeKey,
+        documentName,
+        documentContext
+      );
+      summaryResult = result;
+    } catch (sumErr: any) {
+      logger.error(`[handleUpload] Summary generation failed for ID ${id}:`, sumErr);
+      const status = sumErr?.status || sumErr?.code;
+      const message = String(sumErr?.message || sumErr).toLowerCase();
+
+      if (
+        status === 429 ||
+        message.includes("429") ||
+        message.includes("quota") ||
+        message.includes("limit") ||
+        message.includes("exhausted") ||
+        message.includes("rate")
+      ) {
+        summaryError = "Gemini API quota exceeded. Document indexing completed successfully, but AI generation is temporarily unavailable. Please try again later or use another API key.";
+      } else if (
+        status === 401 ||
+        status === 403 ||
+        (status === 400 && message.includes("api key")) ||
+        (message.includes("api key") && (
+          message.includes("invalid") ||
+          message.includes("not valid") ||
+          message.includes("unauthorized") ||
+          message.includes("expired")
+        ))
+      ) {
+        summaryError = "Invalid Gemini API key. Please verify your API key.";
+      } else if (
+        status === 503 ||
+        status === 504 ||
+        message.includes("503") ||
+        message.includes("unavailable") ||
+        message.includes("overloaded") ||
+        message.includes("timeout") ||
+        message.includes("fetch failed")
+      ) {
+        summaryError = "Gemini services are experiencing high demand. Please try again shortly.";
+      } else {
+        summaryError = sumErr?.message || "AI summary generation failed.";
+      }
+    }
 
     // 5. Update stored document details with generated summary
-    storedDoc.summary = result.summary;
-    storedDoc.topics = result.topics;
-    storedDoc.purpose = result.purpose;
-    storedDoc.initialSuggestions = result.suggestions;
+    storedDoc.summary = summaryResult.summary;
+    storedDoc.topics = summaryResult.topics;
+    storedDoc.purpose = summaryResult.purpose;
+    storedDoc.initialSuggestions = summaryResult.suggestions;
 
     return res.json({
       documentId: id,
-      ...result
+      ...summaryResult,
+      summaryError
     });
   } catch (error: any) {
     logger.error("Summarization error:", error);

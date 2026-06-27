@@ -15,21 +15,10 @@ export function handleAIError(error: any, res: Response) {
   const status = error?.status || error?.code;
   const message = String(error?.message || error).toLowerCase();
 
-  // 1. Invalid API Key Mapping
-  if (
-    status === 400 && message.includes("api key") ||
-    status === 403 ||
-    message.includes("api key") && (message.includes("invalid") || message.includes("not valid") || message.includes("unauthorized") || message.includes("expired"))
-  ) {
-    return res.status(403).json({
-      code: "INVALID_API_KEY",
-      error: "Invalid Gemini API key. Please verify your API key."
-    });
-  }
-
-  // 2. Daily Quota Exhausted Mapping
+  // 1. Quota / Rate Limit (429) - checked first to take precedence
   if (
     status === 429 ||
+    message.includes("429") ||
     message.includes("quota") ||
     message.includes("limit") ||
     message.includes("exhausted") ||
@@ -37,14 +26,33 @@ export function handleAIError(error: any, res: Response) {
   ) {
     return res.status(429).json({
       code: "RATE_LIMITED",
-      error: "Daily Gemini API quota reached. Please wait for quota reset or use another API key."
+      error: "Gemini API quota exceeded. Document indexing completed successfully, but AI generation is temporarily unavailable. Please try again later or use another API key."
     });
   }
 
-  // 3. Temporary Service Unavailable Mapping
+  // 2. Invalid API Key Mapping (401 / 403)
+  if (
+    status === 401 ||
+    status === 403 ||
+    (status === 400 && message.includes("api key")) ||
+    (message.includes("api key") && (
+      message.includes("invalid") ||
+      message.includes("not valid") ||
+      message.includes("unauthorized") ||
+      message.includes("expired")
+    ))
+  ) {
+    return res.status(403).json({
+      code: "INVALID_API_KEY",
+      error: "Invalid Gemini API key. Please verify your API key."
+    });
+  }
+
+  // 3. Temporary Service Unavailable Mapping (503)
   if (
     status === 503 ||
     status === 504 ||
+    message.includes("503") ||
     message.includes("unavailable") ||
     message.includes("overloaded") ||
     message.includes("timeout") ||
@@ -52,7 +60,7 @@ export function handleAIError(error: any, res: Response) {
   ) {
     return res.status(503).json({
       code: "AI_SERVICE_UNAVAILABLE",
-      error: "Gemini is temporarily unavailable. Please try again shortly."
+      error: "Gemini services are experiencing high demand. Please try again shortly."
     });
   }
 

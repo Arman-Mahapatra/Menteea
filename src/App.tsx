@@ -200,10 +200,14 @@ export default function App() {
     setViewerPageNumber(1);
     setIsLoading(false);
 
-    // Create introductory lightweight message in the chat (Task 3)
-    const introContent = `✓ Document indexed successfully.
+    if (newDoc.summaryError) {
+      setErrorAlert(newDoc.summaryError);
+    }
 
-Ready to answer questions.`;
+    // Create introductory lightweight message in the chat (Task 3)
+    const introContent = newDoc.summaryError
+      ? `✓ Document indexed successfully.\n\n⚠️ AI Summary generation failed: ${newDoc.summaryError}\n\nReady to answer questions.`
+      : `✓ Document indexed successfully.\n\nReady to answer questions.`;
 
     const summaryMsg: ChatMessage = {
       id: Math.random().toString(),
@@ -281,14 +285,14 @@ Ready to answer questions.`;
           errMessage.toLowerCase().includes("limit")
         ) {
           throw new Error(
-            "Daily Gemini API quota reached. Please wait for quota reset or use another API key."
+            "Gemini API quota exceeded. Document indexing completed successfully, but AI generation is temporarily unavailable. Please try again later or use another API key."
           );
         }
         if (
           errData?.code === "AI_SERVICE_UNAVAILABLE" ||
           errMessage.toLowerCase().includes("unavailable")
         ) {
-          throw new Error("Gemini is temporarily unavailable. Please try again shortly.");
+          throw new Error("Gemini services are experiencing high demand. Please try again shortly.");
         }
 
         throw new Error(errMessage || "An unexpected error occurred while processing your request.");
@@ -489,6 +493,7 @@ Ready to answer questions.`;
             pageNumber={viewerPageNumber}
             onPageChange={(page) => setViewerPageNumber(page)}
             totalPages={activeDocPagesCount}
+            pageText={activeDoc?.pages.find((p) => p.pageNumber === viewerPageNumber)?.text || null}
           />
         </div>
 
