@@ -3,11 +3,12 @@ import ReactMarkdown from "react-markdown";
 import { motion } from "motion/react";
 import { Send, Sparkles, User, HelpCircle, Loader2, FileText, ChevronRight, MessageSquare, AlertCircle } from "lucide-react";
 import { ChatMessage, DocumentFile } from "../types";
+import { MenteeaIcon } from "./MenteeaLogo";
 
 interface ChatPanelProps {
   messages: ChatMessage[];
   selectedDocuments: DocumentFile[];
-  onSendMessage: (content: string) => void;
+  onSendMessage: (content: string) => Promise<boolean>;
   onJumpToPage: (pageNumber: number) => void;
   isLoading: boolean;
   loadingStatus: string;
@@ -24,6 +25,8 @@ export default function ChatPanel({
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);
+  const [lastPrompt, setLastPrompt] = useState("");
+  const [showChatRetry, setShowChatRetry] = useState(false);
 
   // Reset showAllSuggestions when messages count changes
   useEffect(() => {
@@ -44,11 +47,19 @@ export default function ChatPanel({
     }
   }, [messages, isLoading, showAllSuggestions]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
-    onSendMessage(input.trim());
-    setInput("");
+    const prompt = input.trim();
+    setLastPrompt(prompt);
+    setShowChatRetry(false);
+
+    const success = await onSendMessage(prompt);
+    if (success) {
+      setInput("");
+    } else {
+      setShowChatRetry(true);
+    }
   };
 
   // Convert (Page X) or [Page X] or (Page X, Y) into a clean Markdown link so we can intercept it
@@ -119,7 +130,14 @@ export default function ChatPanel({
                   {selectedDocuments[0].initialSuggestions.slice(0, 3).map((suggestion, idx) => (
                     <button
                       key={idx}
-                      onClick={() => onSendMessage(suggestion)}
+                      onClick={async () => {
+                        setLastPrompt(suggestion);
+                        setShowChatRetry(false);
+                        const success = await onSendMessage(suggestion);
+                        if (!success) {
+                          setShowChatRetry(true);
+                        }
+                      }}
                       className="w-full text-left text-xs bg-bg-surface hover:bg-bg-secondary border border-border-custom hover:border-text-muted rounded-xl px-4 py-3 transition-all duration-200 hover:-translate-y-[1px] active:translate-y-0 flex items-center justify-between text-text-secondary group shadow-xs cursor-pointer"
                     >
                       <span className="truncate pr-4 font-medium">{suggestion}</span>
@@ -139,8 +157,8 @@ export default function ChatPanel({
                 >
                   {/* Avatar for Assistant */}
                   {isAssistant && (
-                    <div className="flex h-6 w-6 items-center justify-center rounded bg-text-primary text-bg-surface shrink-0 text-[10px] font-bold font-serif italic shadow-xs">
-                      M
+                    <div className="flex h-6 w-6 items-center justify-center rounded bg-bg-surface border border-border-custom text-text-primary shrink-0 shadow-xs">
+                      <MenteeaIcon size={14} />
                     </div>
                   )}
 
@@ -252,8 +270,8 @@ export default function ChatPanel({
           {/* Streaming / Active Loading state */}
           {isLoading && (
             <div className="flex gap-4 justify-start items-center">
-              <div className="flex h-6 w-6 items-center justify-center rounded bg-text-primary text-bg-surface shrink-0 animate-pulse text-[10px] font-bold italic font-serif shadow-xs">
-                M
+              <div className="flex h-6 w-6 items-center justify-center rounded bg-bg-surface border border-border-custom shrink-0 animate-pulse shadow-xs">
+                <MenteeaIcon size={14} />
               </div>
               <div className="max-w-[85%]">
                 <div className="flex items-center gap-2 text-text-muted">
@@ -279,7 +297,14 @@ export default function ChatPanel({
                 {visibleSuggestions.map((suggestion, idx) => (
                   <button
                     key={idx}
-                    onClick={() => onSendMessage(suggestion)}
+                    onClick={async () => {
+                      setLastPrompt(suggestion);
+                      setShowChatRetry(false);
+                      const success = await onSendMessage(suggestion);
+                      if (!success) {
+                        setShowChatRetry(true);
+                      }
+                    }}
                     className="max-w-[92%] px-5 py-2.5 bg-bg-surface border border-border-custom hover:border-text-muted hover:bg-bg-secondary text-text-secondary hover:text-text-primary rounded-2xl text-xs font-medium tracking-tight shadow-xs transition-all duration-200 cursor-pointer hover:-translate-y-[1px] active:scale-[0.98] flex items-center justify-center select-none text-center leading-snug"
                     title={suggestion}
                   >
@@ -303,6 +328,33 @@ export default function ChatPanel({
         </div>
       </div>
 
+      {/* Retry Request Block (Task 7) */}
+      {showChatRetry && (
+        <div className="mx-auto w-full max-w-2xl px-6 mb-2">
+          <div className="flex items-center justify-between bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-2.5 text-xs text-rose-800 dark:text-rose-400">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-rose-500 shrink-0" />
+              <span>AI generation failed. You can edit the input and resubmit, or retry.</span>
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                setShowChatRetry(false);
+                const success = await onSendMessage(lastPrompt);
+                if (success) {
+                  setInput("");
+                } else {
+                  setShowChatRetry(true);
+                }
+              }}
+              className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-3 py-1.5 rounded-lg transition duration-200 cursor-pointer text-[11px]"
+            >
+              Retry Request
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Input box */}
       <div className="bg-bg-app border-t border-border-custom/60 px-6 py-5 shrink-0 theme-transition">
         <div className="max-w-2xl mx-auto">
@@ -320,7 +372,7 @@ export default function ChatPanel({
               rows={1}
               placeholder={
                 selectedDocuments.length === 0
-                  ? "Type a query (No active documents selected)..."
+                  ? "Ask anything or upload documents for grounded answers..."
                   : "Ask a research question..."
               }
               className="w-full bg-bg-surface border border-border-custom rounded-xl px-4 py-3.5 text-sm text-text-primary outline-none transition focus:border-text-muted focus:ring-1 focus:ring-text-muted disabled:opacity-50 pr-12 shadow-xs resize-none"
@@ -338,3 +390,4 @@ export default function ChatPanel({
     </div>
   );
 }
+

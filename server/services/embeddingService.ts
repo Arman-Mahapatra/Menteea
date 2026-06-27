@@ -1,5 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { logger } from "../utils/logger";
+import { GEMINI_EMBEDDING_MODEL } from "../config/models";
+import { callWithRetry } from "../utils/aiRetryHelper";
 
 export class EmbeddingService {
   private static instance: EmbeddingService;
@@ -36,10 +38,12 @@ export class EmbeddingService {
     logger.info(`[EmbeddingService] Generating embedding for text length: ${text.length}`);
     try {
       const ai = this.getGenAI(key);
-      const response = await ai.models.embedContent({
-        model: "gemini-embedding-2-preview",
-        contents: text,
-      });
+      const response = await callWithRetry(() =>
+        ai.models.embedContent({
+          model: GEMINI_EMBEDDING_MODEL,
+          contents: text,
+        })
+      );
 
       const values = response.embeddings?.[0]?.values;
       if (!values || !Array.isArray(values)) {
@@ -113,3 +117,4 @@ export class EmbeddingService {
   }
 }
 export default EmbeddingService;
+

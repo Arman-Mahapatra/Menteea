@@ -1,4 +1,4 @@
-# Menteea v0.1 — AI-Powered Research Assistant
+# Menteea v1.0 — AI-Powered Research Assistant
 
 Menteea is a polished, full-stack AI-powered research assistant that transforms static PDF documents into interactive, intelligent workspaces. Perfect for students, engineers, researchers, and professionals, it bridges the gap between structured documentation and natural language exploration.
 

@@ -297,7 +297,7 @@ export default function QuizPanel({
                 </p>
               </div>
               <button
-                onClick={() => loadQuiz(false)}
+                onClick={() => loadQuiz(true)}
                 className="mt-3 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-sm transition active:scale-95 cursor-pointer"
               >
                 Retry Generation

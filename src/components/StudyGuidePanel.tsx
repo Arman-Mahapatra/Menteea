@@ -509,7 +509,7 @@ export default function StudyGuidePanel({
               </p>
             </div>
             <button
-              onClick={() => loadStudyGuide(false)}
+              onClick={() => loadStudyGuide(true)}
               className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-sm transition active:scale-95 cursor-pointer"
             >
               Retry Generation

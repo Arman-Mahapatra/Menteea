@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from "react";
 import LandingPage from "./components/LandingPage";
 import LibraryPanel from "./components/LibraryPanel";
+import { MenteeaLogo } from "./components/MenteeaLogo";
 import ChatPanel from "./components/ChatPanel";
 import PDFViewerPanel from "./components/PDFViewerPanel";
 import ApiKeyModal from "./components/ApiKeyModal";
 import MindMapPanel from "./components/MindMapPanel";
 import QuizPanel from "./components/QuizPanel";
 import StudyGuidePanel from "./components/StudyGuidePanel";
+import HelpCenterModal from "./components/HelpCenterModal";
 import { DocumentFile, ChatMessage } from "./types";
-import { Sparkles, Key, RefreshCw, LogOut, FileText, AlertTriangle, X, Sun, Moon } from "lucide-react";
+import { Sparkles, Key, RefreshCw, LogOut, FileText, AlertTriangle, X, Sun, Moon, ExternalLink, HelpCircle } from "lucide-react";
 
 export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -69,6 +71,8 @@ export default function App() {
   const [quizDoc, setQuizDoc] = useState<DocumentFile | null>(null);
   const [isStudyGuideOpen, setIsStudyGuideOpen] = useState(false);
   const [studyGuideDoc, setStudyGuideDoc] = useState<DocumentFile | null>(null);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [activeHelpTab, setActiveHelpTab] = useState<"quickstart" | "docs" | "faq" | "samples" | "legal-privacy" | "legal-terms" | "legal-security">("quickstart");
 
   // Panel resizing states
   const [libraryWidth, setLibraryWidth] = useState<number>(() => {
@@ -230,14 +234,36 @@ export default function App() {
     setMessages((prev) => [...prev, summaryMsg]);
   };
 
+  const handleAddSampleDocument = (doc: DocumentFile) => {
+    setDocuments((prev) => {
+      const exists = prev.some((d) => d.id === doc.id);
+      if (exists) {
+        return prev.map((d) => d.id === doc.id ? { ...d, isSelected: true } : d);
+      }
+      return [doc, ...prev];
+    });
+    setActiveDocId(doc.id);
+    setViewerPageNumber(1);
+    
+    const sampleWelcomeMsg: ChatMessage = {
+      id: Math.random().toString(),
+      role: "assistant",
+      content: `I have loaded the sample document: **${doc.name}**.\n\nYou can now:\n1. Chat with me directly about its contents below.\n2. Open the active learning drawers to generate an interactive **Mind Map**, run a **Quiz**, or compile a complete **Study Guide**!`,
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      suggestions: doc.initialSuggestions || [],
+      isInitialSummary: true
+    };
+    setMessages((prev) => [...prev, sampleWelcomeMsg]);
+  };
+
   const handleUploadError = (err: string) => {
     setIsLoading(false);
     setErrorAlert(err);
   };
 
   // 4. Chat/AI Handler
-  const handleSendMessage = async (content: string) => {
-    if (!content.trim() || isLoading) return;
+  const handleSendMessage = async (content: string): Promise<boolean> => {
+    if (!content.trim() || isLoading) return false;
 
     // Create User Message
     const userMsg: ChatMessage = {
@@ -318,6 +344,7 @@ export default function App() {
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
+      return true;
     } catch (err: unknown) {
       console.error("Chat Error:", err);
 
@@ -327,6 +354,7 @@ export default function App() {
           : "An unexpected error occurred while processing your request.";
 
       setErrorAlert(message);
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -401,12 +429,23 @@ export default function App() {
           onStart={() => setShowLandingPage(false)}
           onOpenApiKey={() => setIsApiKeyOpen(true)}
           hasApiKey={!!apiKey}
+          onOpenHelpCenter={(tab) => {
+            setActiveHelpTab(tab);
+            setIsHelpOpen(true);
+          }}
         />
         <ApiKeyModal
           isOpen={isApiKeyOpen}
           onClose={() => setIsApiKeyOpen(false)}
           currentKey={apiKey}
           onSaveKey={(key) => setApiKey(key)}
+        />
+        <HelpCenterModal
+          isOpen={isHelpOpen}
+          onClose={() => setIsHelpOpen(false)}
+          onAddDocument={handleAddSampleDocument}
+          activeTab={activeHelpTab}
+          setActiveTab={setActiveHelpTab}
         />
       </>
     );
@@ -434,12 +473,12 @@ export default function App() {
       {/* Main Workspace Header */}
       <header className="h-14 bg-bg-surface border-b border-border-custom px-6 flex items-center justify-between z-20 shrink-0 theme-transition">
         <div className="flex items-center gap-4">
-          <h1
+          <div
             onClick={() => setShowLandingPage(true)}
-            className="font-serif font-bold text-xl italic tracking-tight text-text-primary cursor-pointer hover:opacity-85 transition"
+            className="cursor-pointer hover:opacity-85 transition"
           >
-            Menteea <span className="text-[10px] font-sans font-medium uppercase tracking-widest text-text-muted align-top ml-1">v0.1</span>
-          </h1>
+            <MenteeaLogo showVersion={true} size={26} />
+          </div>
           <div className="h-4 w-[1px] bg-border-custom" />
           <div className="text-[10px] uppercase font-bold text-text-muted tracking-wider flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -451,14 +490,15 @@ export default function App() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsApiKeyOpen(true)}
-            className={`flex items-center gap-1.5 border px-3 py-1.5 text-xs font-semibold rounded transition cursor-pointer ${
+            title={apiKey ? "Using your personal Gemini API key." : "Connect your Gemini API key to activate AI features."}
+            className={`flex items-center gap-1.5 border px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer ${
               apiKey
                 ? "bg-emerald-50 dark:bg-emerald-950/25 border-emerald-200 dark:border-emerald-900/40 text-emerald-800 dark:text-emerald-400"
                 : "bg-bg-surface border-border-custom text-text-primary hover:bg-bg-secondary"
             }`}
           >
-            <Key className="h-3.5 w-3.5" />
-            {apiKey ? "API Key Configured" : "Add API Key"}
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${apiKey ? "bg-emerald-500 animate-pulse" : "bg-text-muted"}`} />
+            <span>{apiKey ? "Gemini Connected" : "Connect Gemini"}</span>
           </button>
 
           {/* Premium Light/Dark Theme Toggle */}
@@ -481,6 +521,18 @@ export default function App() {
           </button>
 
           <button
+            onClick={() => {
+              setActiveHelpTab("quickstart");
+              setIsHelpOpen(true);
+            }}
+            className="flex items-center gap-1.5 border border-border-custom bg-bg-surface px-3 py-1.5 text-xs font-semibold text-text-secondary hover:bg-bg-secondary rounded transition-all duration-200 active:scale-95 cursor-pointer"
+            title="Open Help Center & Technical Documentation"
+          >
+            <HelpCircle className="h-3.5 w-3.5 text-indigo-500" />
+            <span>Help & Docs</span>
+          </button>
+
+          <button
             onClick={handleResetSession}
             className="flex items-center gap-1.5 border border-border-custom bg-bg-surface px-3 py-1.5 text-xs font-semibold text-text-secondary hover:bg-bg-secondary rounded transition-all duration-200 active:scale-95 cursor-pointer"
             title="Reset Library & Chats"
@@ -500,72 +552,166 @@ export default function App() {
         </div>
       </header>
 
-      {/* Three Column Grid Container */}
-      <div className="flex-1 flex overflow-hidden w-full h-full relative">
-        {/* Column 1: Left Library Panel */}
-        <div 
-          style={{ width: `${libraryWidth}px` }} 
-          className="h-full shrink-0 overflow-hidden"
-        >
-          <LibraryPanel
-            documents={documents}
-            activeDocId={activeDocId}
-            onSelectDocForViewer={handleSelectDocForViewer}
-            onToggleDocSelection={handleToggleDocSelection}
-            onUploadStart={handleUploadStart}
-            onUploadProgress={handleUploadProgress}
-            onUploadEnd={handleUploadEnd}
-            onUploadError={handleUploadError}
-            apiKey={apiKey}
-            onDeleteDoc={handleDeleteDoc}
-          />
+      {/* Three Column Grid Container or Welcome Onboarding Card */}
+      {!apiKey ? (
+        <div className="flex-1 flex items-center justify-center bg-bg-app p-6 overflow-y-auto theme-transition">
+          <div className="w-full max-w-xl rounded-2xl border border-border-custom bg-bg-surface p-8 shadow-xl text-left space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-500 dark:text-indigo-400">
+                <Sparkles className="h-6 w-6 text-indigo-500 dark:text-indigo-400 animate-pulse" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold font-sans tracking-tight text-text-primary">
+                  Welcome to Menteea
+                </h2>
+                <p className="text-xs text-text-muted mt-0.5 font-medium">
+                  v1.0 Workspace Activation
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-text-secondary leading-relaxed font-medium">
+              Connect your Gemini API key to unlock grounded conversations, mind maps, quizzes, study guides, and document intelligence features. Menteea runs completely locally and secures your credentials directly in your browser.
+            </p>
+
+            {/* Step Flow */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-bg-secondary/40 border border-border-custom/50">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 text-xs font-bold">
+                  1
+                </div>
+                <div className="space-y-0.5">
+                  <h4 className="text-xs font-bold text-text-primary">Get a Gemini API Key</h4>
+                  <p className="text-[10px] text-text-muted leading-relaxed font-semibold">
+                    Obtain a free or paid API key instantly in Google AI Studio.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-bg-secondary/40 border border-border-custom/50">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 text-xs font-bold">
+                  2
+                </div>
+                <div className="space-y-0.5">
+                  <h4 className="text-xs font-bold text-text-primary">Connect Your Key</h4>
+                  <p className="text-[10px] text-text-muted leading-relaxed font-semibold">
+                    Paste and validate your key securely within Menteea settings.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-bg-secondary/40 border border-border-custom/50">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 text-xs font-bold">
+                  3
+                </div>
+                <div className="space-y-0.5">
+                  <h4 className="text-xs font-bold text-text-primary">Upload a Document</h4>
+                  <p className="text-[10px] text-text-muted leading-relaxed font-semibold">
+                    Import any research paper, book, or notes in PDF format.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-bg-secondary/40 border border-border-custom/50">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 text-xs font-bold">
+                  4
+                </div>
+                <div className="space-y-0.5">
+                  <h4 className="text-xs font-bold text-text-primary">Start Learning</h4>
+                  <p className="text-[10px] text-text-muted leading-relaxed font-semibold">
+                    Generate instant summaries, custom quizzes, and mind maps.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t border-border-custom">
+              <a
+                href="https://aistudio.google.com/app/apikey"
+                target="_blank"
+                referrerPolicy="no-referrer"
+                rel="noopener noreferrer"
+                className="text-[11px] font-bold text-text-muted hover:text-indigo-500 transition duration-150 inline-flex items-center gap-1"
+              >
+                Learn more about Google AI Studio <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+              <button
+                onClick={() => setIsApiKeyOpen(true)}
+                className="flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 text-xs font-bold shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer"
+              >
+                <Key className="h-4 w-4" />
+                Connect API Key
+              </button>
+            </div>
+          </div>
         </div>
+      ) : (
+        <div className="flex-1 flex overflow-hidden w-full h-full relative">
+          {/* Column 1: Left Library Panel */}
+          <div 
+            style={{ width: `${libraryWidth}px` }} 
+            className="h-full shrink-0 overflow-hidden"
+          >
+            <LibraryPanel
+              documents={documents}
+              activeDocId={activeDocId}
+              onSelectDocForViewer={handleSelectDocForViewer}
+              onToggleDocSelection={handleToggleDocSelection}
+              onUploadStart={handleUploadStart}
+              onUploadProgress={handleUploadProgress}
+              onUploadEnd={handleUploadEnd}
+              onUploadError={handleUploadError}
+              apiKey={apiKey}
+              onDeleteDoc={handleDeleteDoc}
+            />
+          </div>
 
-        {/* Resize Handle 1: Between Library and PDF Viewer */}
-        <div
-          onMouseDown={handleLibraryMouseDown}
-          className="w-1 cursor-col-resize hover:bg-neutral-300 dark:hover:bg-neutral-700 active:bg-neutral-400 dark:active:bg-neutral-600 transition-colors h-full shrink-0 z-30 bg-bg-app border-l border-r border-border-custom/50"
-          title="Drag to resize library panel"
-        />
-
-        {/* Column 2: Center PDF Canvas Viewer */}
-        <div className="flex-1 h-full min-w-[350px] overflow-hidden">
-          <PDFViewerPanel
-            documentId={activeDocId}
-            documentName={activeDoc ? activeDoc.name : null}
-            pageNumber={viewerPageNumber}
-            onPageChange={(page) => setViewerPageNumber(page)}
-            totalPages={activeDocPagesCount}
-            pageText={activeDoc?.pages.find((p) => p.pageNumber === viewerPageNumber)?.text || null}
-            documents={documents}
-            onGenerateMindMap={handleGenerateMindMap}
-            onGenerateQuiz={handleGenerateQuiz}
-            onGenerateStudyGuide={handleGenerateStudyGuide}
+          {/* Resize Handle 1: Between Library and PDF Viewer */}
+          <div
+            onMouseDown={handleLibraryMouseDown}
+            className="w-1 cursor-col-resize hover:bg-neutral-300 dark:hover:bg-neutral-700 active:bg-neutral-400 dark:active:bg-neutral-600 transition-colors h-full shrink-0 z-30 bg-bg-app border-l border-r border-border-custom/50"
+            title="Drag to resize library panel"
           />
-        </div>
 
-        {/* Resize Handle 2: Between PDF Viewer and AI Assistant */}
-        <div
-          onMouseDown={handleAssistantMouseDown}
-          className="w-1 cursor-col-resize hover:bg-neutral-300 dark:hover:bg-neutral-700 active:bg-neutral-400 dark:active:bg-neutral-600 transition-colors h-full shrink-0 z-30 bg-bg-app border-l border-r border-border-custom/50"
-          title="Drag to resize assistant panel"
-        />
+          {/* Column 2: Center PDF Canvas Viewer */}
+          <div className="flex-1 h-full min-w-[350px] overflow-hidden">
+            <PDFViewerPanel
+              documentId={activeDocId}
+              documentName={activeDoc ? activeDoc.name : null}
+              pageNumber={viewerPageNumber}
+              onPageChange={(page) => setViewerPageNumber(page)}
+              totalPages={activeDocPagesCount}
+              pageText={activeDoc?.pages.find((p) => p.pageNumber === viewerPageNumber)?.text || null}
+              documents={documents}
+              onGenerateMindMap={handleGenerateMindMap}
+              onGenerateQuiz={handleGenerateQuiz}
+              onGenerateStudyGuide={handleGenerateStudyGuide}
+            />
+          </div>
 
-        {/* Column 3: Right AI Assistant (Chat Panel) */}
-        <div 
-          style={{ width: `${assistantWidth}px` }} 
-          className="h-full shrink-0 overflow-hidden"
-        >
-          <ChatPanel
-            messages={messages}
-            selectedDocuments={documents.filter((doc) => doc.isSelected)}
-            onSendMessage={handleSendMessage}
-            onJumpToPage={handleJumpToPage}
-            isLoading={isLoading && loadingStatus === "Thinking..."}
-            loadingStatus={loadingStatus}
+          {/* Resize Handle 2: Between PDF Viewer and AI Assistant */}
+          <div
+            onMouseDown={handleAssistantMouseDown}
+            className="w-1 cursor-col-resize hover:bg-neutral-300 dark:hover:bg-neutral-700 active:bg-neutral-400 dark:active:bg-neutral-600 transition-colors h-full shrink-0 z-30 bg-bg-app border-l border-r border-border-custom/50"
+            title="Drag to resize assistant panel"
           />
+
+          {/* Column 3: Right AI Assistant (Chat Panel) */}
+          <div 
+            style={{ width: `${assistantWidth}px` }} 
+            className="h-full shrink-0 overflow-hidden"
+          >
+            <ChatPanel
+              messages={messages}
+              selectedDocuments={documents.filter((doc) => doc.isSelected)}
+              onSendMessage={handleSendMessage}
+              onJumpToPage={handleJumpToPage}
+              isLoading={isLoading && loadingStatus === "Thinking..."}
+              loadingStatus={loadingStatus}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       <ApiKeyModal
         isOpen={isApiKeyOpen}
@@ -597,6 +743,14 @@ export default function App() {
         document={studyGuideDoc}
         apiKey={apiKey}
         selectedDocuments={documents}
+      />
+
+      <HelpCenterModal
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+        onAddDocument={handleAddSampleDocument}
+        activeTab={activeHelpTab}
+        setActiveTab={setActiveHelpTab}
       />
     </div>
   );

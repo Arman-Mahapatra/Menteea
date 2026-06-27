@@ -8,6 +8,7 @@ import { handleMindMap } from "./api/mindmap";
 import { handleQuiz } from "./api/quiz";
 import { handleStudyGuide } from "./api/studyGuide";
 import { handleExportPdf, handleExportDocx } from "./api/export";
+import { handleValidateKey } from "./api/validateKey";
 import { logger } from "./utils/logger";
 
 dotenv.config();
@@ -30,6 +31,7 @@ app.post("/api/quiz", handleQuiz);
 app.post("/api/study-guide", handleStudyGuide);
 app.post("/api/export/pdf", handleExportPdf);
 app.post("/api/export/docx", handleExportDocx);
+app.post("/api/validate-key", handleValidateKey);
 
 // Integrate Vite middleware or serve static files
 async function startServer() {

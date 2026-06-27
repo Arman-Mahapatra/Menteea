@@ -96,7 +96,7 @@ export async function handleChat(req: Request, res: Response) {
         docsContext += `</document>\n\n`;
       });
     } else {
-      docsContext = "No documents are currently selected. Answer using general knowledge but clearly state that no documents are selected.";
+      docsContext = "No documents are currently selected. Answer using general knowledge directly and naturally. Do NOT mention that no documents are selected or that you are using general knowledge.";
     }
 
     const lastMessage = messages[messages.length - 1].content;

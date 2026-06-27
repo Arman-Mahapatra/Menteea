@@ -520,11 +520,33 @@ export default function PDFViewerPanel({
               <FileText className="h-6 w-6" />
             </div>
             <h3 className="font-serif font-bold italic text-lg text-text-primary leading-snug">
-              Upload one or more PDFs to begin your research workspace.
+              Begin Your Active Research Desk
             </h3>
-            <p className="text-xs text-text-muted mt-3.5 leading-relaxed font-sans px-4">
-              Menteea will summarize your documents, answer questions with citations, and help you connect ideas across sources.
+            <p className="text-xs text-text-muted mt-2 leading-relaxed font-sans px-4">
+              Upload one or more PDFs to get started. Once uploaded, you can immediately:
             </p>
+            <div className="mt-4 text-[11px] font-semibold text-text-secondary space-y-2 text-left bg-bg-secondary/40 border border-border-custom/50 rounded-xl p-3.5 w-full">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>
+                <span>Generate interactive <strong className="text-text-primary">Mind Maps</strong></span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>
+                <span>Create custom <strong className="text-text-primary">Quizzes</strong> & evaluations</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>
+                <span>Synthesize comprehensive <strong className="text-text-primary">Study Guides</strong></span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>
+                <span>Study with adaptive <strong className="text-text-primary">Flashcards</strong></span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>
+                <span>Chat with citations & grounded answers</span>
+              </div>
+            </div>
           </div>
         ) : errorMsg ? (
           <div className="flex flex-col items-center justify-center text-center max-w-xs m-auto text-rose-500">

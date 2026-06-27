@@ -2,6 +2,56 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { logger } from "../utils/logger";
 import { buildChatPrompt, buildSystemInstruction } from "../rag/promptBuilder";
 import { RetrievalService } from "./retrievalService";
+import { callWithRetry } from "../utils/aiRetryHelper";
+import { GEMINI_MODEL } from "../config/models";
+
+function shouldFilterSuggestions(questionText: string): boolean {
+  const q = questionText.trim().toLowerCase().replace(/[?.,!]/g, "");
+  
+  // Greetings
+  const greetings = [
+    "hello", "hi", "hey", "greetings", "good morning", "good afternoon", "good evening", "yo",
+    "hello there", "hi there", "hey there", "good day", "morning", "evening"
+  ];
+  if (greetings.includes(q)) return true;
+
+  // Thank yous
+  const thanks = [
+    "thanks", "thank you", "ty", "thank you so much", "awesome", "perfect", "great", "ok", "okay",
+    "thanks!", "thank you!", "thanks a lot", "many thanks"
+  ];
+  if (thanks.includes(q)) return true;
+
+  // Very short prompts (1 word)
+  const words = q.split(/\s+/).filter(Boolean);
+  if (words.length <= 1) {
+    return true;
+  }
+
+  // Basic arithmetic: e.g., "2+2", "2 + 2", "10 * 5"
+  const cleanMath = q.replace(/^what is\s+|^whats\s+|^calculate\s+|^solve\s+/, "").trim();
+  if (/^[0-9+\-*/()\s=]+$/.test(cleanMath) && /[0-9]/.test(cleanMath)) {
+    return true;
+  }
+
+  // Trivial factual/utility questions
+  const trivialPatterns = [
+    /^what time is it$/,
+    /^what is the time$/,
+    /^whats the time$/,
+    /^who are you$/,
+    /^who made you$/,
+    /^what is your name$/,
+    /^whats your name$/,
+    /^capital of [a-zA-Z\s]+$/,
+    /^what is the capital of [a-zA-Z\s]+$/
+  ];
+  if (trivialPatterns.some(pattern => pattern.test(q))) {
+    return true;
+  }
+
+  return false;
+}
 
 export class ChatService {
   private static instance: ChatService;
@@ -26,35 +76,8 @@ export class ChatService {
     });
   }
 
-  private async callWithRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
-    let attempt = 0;
-    while (attempt < retries) {
-      try {
-        return await fn();
-      } catch (error: any) {
-        attempt++;
-        const errStr = String(error).toLowerCase();
-        const isRetryable =
-          errStr.includes("503") ||
-          errStr.includes("service unavailable") ||
-          errStr.includes("resource exhausted") ||
-          errStr.includes("429") ||
-          errStr.includes("overloaded") ||
-          errStr.includes("timeout") ||
-          errStr.includes("fetch failed") ||
-          errStr.includes("socket hang up") ||
-          errStr.includes("econnreset");
-
-        if (isRetryable && attempt < retries) {
-          logger.warn(`Gemini API call failed (Attempt ${attempt}/${retries}): ${error.message || error}. Retrying in ${delay}ms...`);
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          delay *= 2; // Exponential backoff
-        } else {
-          throw error;
-        }
-      }
-    }
-    throw new Error("Maximum retries reached for Gemini API call.");
+  private async callWithRetry<T>(fn: () => Promise<T>): Promise<T> {
+    return callWithRetry(fn);
   }
 
   /**
@@ -106,7 +129,7 @@ export class ChatService {
 
     const response = await this.callWithRetry(() =>
       ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: GEMINI_MODEL,
         contents: prompt,
         config: {
           systemInstruction,
@@ -136,6 +159,10 @@ export class ChatService {
     }
 
     const parsed = JSON.parse(resultText);
+
+    if (shouldFilterSuggestions(question)) {
+      parsed.suggestions = [];
+    }
 
     if (selectedDocumentIds && selectedDocumentIds.length > 0) {
       const infoHeader = `*Retrieved ${chunkCount} relevant chunks from ${docCount} selected documents.*\n\n`;
@@ -171,7 +198,7 @@ Return a JSON object conforming strictly to the requested schema.
 
     const response = await this.callWithRetry(() =>
       ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: GEMINI_MODEL,
         contents: prompt,
         config: {
           systemInstruction,
@@ -240,7 +267,7 @@ Ensure that the JSON is fully valid and strictly matches the recursive "children
 
     const response = await this.callWithRetry(() =>
       ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: GEMINI_MODEL,
         contents: prompt,
         config: {
           systemInstruction,
@@ -353,7 +380,7 @@ Return a single JSON object strictly matching the schema requested.
 
     const response = await this.callWithRetry(() =>
       ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: GEMINI_MODEL,
         contents: prompt,
         config: {
           systemInstruction,
@@ -441,7 +468,7 @@ Return a single JSON object strictly matching the schema requested.
 
     const response = await this.callWithRetry(() =>
       ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: GEMINI_MODEL,
         contents: prompt,
         config: {
           systemInstruction,
