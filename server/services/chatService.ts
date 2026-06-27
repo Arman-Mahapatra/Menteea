@@ -324,6 +324,97 @@ Ensure that the JSON is fully valid and strictly matches the recursive "children
 
     return JSON.parse(resultText);
   }
+
+  /**
+   * Generates a high-quality educational quiz based on the document contents.
+   */
+  public async generateQuiz(
+    apiKey: string,
+    documentName: string,
+    documentContext: string
+  ): Promise<any> {
+    logger.info(`Generating quiz for "${documentName}" via Gemini API`);
+    const ai = this.getGenAI(apiKey);
+
+    const prompt = `Analyze the uploaded document named "${documentName}" and generate an interactive quiz of exactly 10 questions.
+The quiz should test conceptual understanding rather than trivial memorization, cover different sections of the document, and mix difficulty levels (easy, medium, hard).
+Ground all questions strictly in the document content. Do not hallucinate external topics.
+Identify the main categories/topics from the document so each question is mapped to a specific category (e.g. "Spread Spectrum", "Multiplexing", etc.).
+
+Document Content:
+${documentContext.slice(0, 150000)}
+`;
+
+    const systemInstruction = `You are Menteea's Quiz Generator. Analyze the document and build a high-quality quiz structure.
+Return a single JSON object strictly matching the schema requested.
+- Create exactly 10 questions.
+- Each question must have a 'question' text, 4 distinct options under 'options', 'correctAnswer' (0-indexed index of the correct option, i.e., 0, 1, 2, or 3), a detailed 'explanation' justifying the correct option, and a 'category' (the conceptual topic of the question, e.g. "Synchronous TDM", "Spread Spectrum", etc.) to help evaluate weak and strong learning areas.
+- Ensure all questions are grounded strictly in the provided document context.`;
+
+    const response = await this.callWithRetry(() =>
+      ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+        config: {
+          systemInstruction,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              title: {
+                type: Type.STRING,
+                description: "The name/title of the quiz."
+              },
+              description: {
+                type: Type.STRING,
+                description: "A short description of what this quiz covers."
+              },
+              questions: {
+                type: Type.ARRAY,
+                description: "List of exactly 10 quiz questions.",
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    question: {
+                      type: Type.STRING,
+                      description: "The conceptual question text."
+                    },
+                    options: {
+                      type: Type.ARRAY,
+                      items: { type: Type.STRING },
+                      description: "Exactly 4 distinct multiple-choice options."
+                    },
+                    correctAnswer: {
+                      type: Type.INTEGER,
+                      description: "The 0-indexed index of the correct option inside the options array (must be 0, 1, 2, or 3)."
+                    },
+                    explanation: {
+                      type: Type.STRING,
+                      description: "A detailed AI explanation explaining why this option is correct and why others are incorrect."
+                    },
+                    category: {
+                      type: Type.STRING,
+                      description: "The specific subtopic/category this question belongs to (e.g., 'Synchronous TDM', 'Statistical TDM', 'Spread Spectrum') to classify weak/strong areas."
+                    }
+                  },
+                  required: ["question", "options", "correctAnswer", "explanation", "category"]
+                }
+              }
+            },
+            required: ["title", "description", "questions"]
+          }
+        }
+      })
+    );
+
+    const resultText = response.text;
+    if (!resultText) {
+      throw new Error("No response from Gemini API.");
+    }
+
+    return JSON.parse(resultText);
+  }
 }
 export default ChatService;
+
 

@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { handleChat } from "./api/chat";
 import { handleUpload } from "./api/upload";
 import { handleMindMap } from "./api/mindmap";
+import { handleQuiz } from "./api/quiz";
 import { logger } from "./utils/logger";
 
 dotenv.config();
@@ -23,6 +24,7 @@ app.get("/api/health", (req, res) => {
 app.post("/api/summarize", handleUpload);
 app.post("/api/chat", handleChat);
 app.post("/api/mindmap", handleMindMap);
+app.post("/api/quiz", handleQuiz);
 
 // Integrate Vite middleware or serve static files
 async function startServer() {
