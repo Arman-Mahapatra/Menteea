@@ -211,5 +211,119 @@ Return a JSON object conforming strictly to the requested schema.
 
     return JSON.parse(resultText);
   }
+
+  /**
+   * Generates a hierarchical knowledge structure for document concept mapping.
+   */
+  public async generateMindMap(
+    apiKey: string,
+    documentName: string,
+    documentContext: string
+  ): Promise<any> {
+    logger.info(`Generating mind map structure for "${documentName}" via Gemini API`);
+    const ai = this.getGenAI(apiKey);
+
+    const prompt = `Analyze the uploaded document named "${documentName}" and build a detailed hierarchical knowledge structure for a mind map visualization.
+Identify the core central concept, 3-5 major subtopics, and granular child concepts with brief definitions.
+
+Document Content:
+${documentContext.slice(0, 150000)}
+`;
+
+    const systemInstruction = `You are Menteea's Mind Map Generator. Analyze the document and build a hierarchical knowledge graph structure.
+Return a single JSON object matching the MindMapNode schema recursively.
+- The root node should represent the overall document title or main topic.
+- It must have 3-5 major topics under "children".
+- Each major topic should have 2-4 subtopics or core concepts.
+- Provide a concise 1-sentence user-friendly explanation/definition for each node in "description".
+Ensure that the JSON is fully valid and strictly matches the recursive "children", "title", and "description" schema.`;
+
+    const response = await this.callWithRetry(() =>
+      ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+        config: {
+          systemInstruction,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              title: {
+                type: Type.STRING,
+                description: "The name of the main topic or overall document name."
+              },
+              description: {
+                type: Type.STRING,
+                description: "A short 1-sentence summary of what this document/topic is about."
+              },
+              children: {
+                type: Type.ARRAY,
+                description: "Main branches or themes of the document.",
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    title: {
+                      type: Type.STRING,
+                      description: "The major topic name."
+                    },
+                    description: {
+                      type: Type.STRING,
+                      description: "A short 1-sentence description/definition of this major topic."
+                    },
+                    children: {
+                      type: Type.ARRAY,
+                      description: "Subtopics, key sections, or main concepts of this major topic.",
+                      items: {
+                        type: Type.OBJECT,
+                        properties: {
+                          title: {
+                            type: Type.STRING,
+                            description: "The subtopic or concept name."
+                          },
+                          description: {
+                            type: Type.STRING,
+                            description: "A 1-sentence description of this subtopic."
+                          },
+                          children: {
+                            type: Type.ARRAY,
+                            description: "Deep key definitions, specifics, examples, or granular concepts.",
+                            items: {
+                              type: Type.OBJECT,
+                              properties: {
+                                title: {
+                                  type: Type.STRING,
+                                  description: "Granular concept, key term, or example."
+                                },
+                                description: {
+                                  type: Type.STRING,
+                                  description: "Concise definition or explanation of this term/concept."
+                                }
+                              },
+                              required: ["title", "description"]
+                            }
+                          }
+                        },
+                        required: ["title", "description"]
+                      }
+                    }
+                  },
+                  required: ["title", "description"]
+                }
+              }
+            },
+            required: ["title", "description"]
+          }
+        }
+      })
+    );
+
+    const resultText = response.text;
+    if (!resultText) {
+      throw new Error("No response from Gemini API.");
+    }
+
+    return JSON.parse(resultText);
+  }
 }
 export default ChatService;
+

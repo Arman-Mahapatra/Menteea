@@ -4,6 +4,7 @@ import LibraryPanel from "./components/LibraryPanel";
 import ChatPanel from "./components/ChatPanel";
 import PDFViewerPanel from "./components/PDFViewerPanel";
 import ApiKeyModal from "./components/ApiKeyModal";
+import MindMapPanel from "./components/MindMapPanel";
 import { DocumentFile, ChatMessage } from "./types";
 import { Sparkles, Key, RefreshCw, LogOut, FileText, AlertTriangle, X, Sun, Moon } from "lucide-react";
 
@@ -60,6 +61,8 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState("");
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
+  const [isMindMapOpen, setIsMindMapOpen] = useState(false);
+  const [mindMapDoc, setMindMapDoc] = useState<DocumentFile | null>(null);
 
   // Panel resizing states
   const [libraryWidth, setLibraryWidth] = useState<number>(() => {
@@ -323,6 +326,20 @@ export default function App() {
     }
   };
 
+  const handleGenerateMindMap = (doc: DocumentFile) => {
+    if (!apiKey) {
+      setIsApiKeyOpen(true);
+      setErrorAlert("Please configure a valid Gemini API key first.");
+      return;
+    }
+    setMindMapDoc(doc);
+    setIsMindMapOpen(true);
+  };
+
+  const handleAskInChat = (question: string) => {
+    handleSendMessage(question);
+  };
+
   // Click citation to jump to specific page
   const handleJumpToPage = (pageNum: number) => {
     if (pageNum > 0 && pageNum <= activeDocPagesCount) {
@@ -494,6 +511,8 @@ export default function App() {
             onPageChange={(page) => setViewerPageNumber(page)}
             totalPages={activeDocPagesCount}
             pageText={activeDoc?.pages.find((p) => p.pageNumber === viewerPageNumber)?.text || null}
+            documents={documents}
+            onGenerateMindMap={handleGenerateMindMap}
           />
         </div>
 
@@ -526,7 +545,17 @@ export default function App() {
         currentKey={apiKey}
         onSaveKey={(key) => setApiKey(key)}
       />
+
+      <MindMapPanel
+        isOpen={isMindMapOpen}
+        onClose={() => setIsMindMapOpen(false)}
+        document={mindMapDoc}
+        apiKey={apiKey}
+        selectedDocuments={documents}
+        onAskInChat={handleAskInChat}
+      />
     </div>
   );
 }
+
 

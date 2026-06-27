@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { handleChat } from "./api/chat";
 import { handleUpload } from "./api/upload";
+import { handleMindMap } from "./api/mindmap";
 import { logger } from "./utils/logger";
 
 dotenv.config();
@@ -21,6 +22,7 @@ app.get("/api/health", (req, res) => {
 // Refactored routes mapping to modular handlers
 app.post("/api/summarize", handleUpload);
 app.post("/api/chat", handleChat);
+app.post("/api/mindmap", handleMindMap);
 
 // Integrate Vite middleware or serve static files
 async function startServer() {

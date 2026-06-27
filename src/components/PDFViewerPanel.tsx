@@ -8,8 +8,12 @@ import {
   ChevronRight,
   FileText,
   Loader2,
-  Expand
+  Expand,
+  Sparkles,
+  X,
+  ChevronDown
 } from "lucide-react";
+import { DocumentFile } from "../types";
 
 interface PDFViewerPanelProps {
   documentId: string | null;
@@ -18,6 +22,8 @@ interface PDFViewerPanelProps {
   onPageChange: (page: number) => void;
   totalPages: number;
   pageText?: string | null;
+  documents: DocumentFile[];
+  onGenerateMindMap?: (doc: DocumentFile) => void;
 }
 
 type ZoomMode = "fit-width" | "fit-page" | "manual";
@@ -29,6 +35,8 @@ export default function PDFViewerPanel({
   onPageChange,
   totalPages,
   pageText,
+  documents,
+  onGenerateMindMap,
 }: PDFViewerPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -42,6 +50,16 @@ export default function PDFViewerPanel({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isTextFallback, setIsTextFallback] = useState<boolean>(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // Auto-clear toast notice after 3 seconds
+  useEffect(() => {
+    if (toastMsg) {
+      const timer = setTimeout(() => setToastMsg(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMsg]);
 
   // Monitor fullscreen status
   useEffect(() => {
@@ -357,6 +375,133 @@ export default function PDFViewerPanel({
           </div>
         ) : null}
       </div>
+
+      {/* Toast Announcement Notification Overlay */}
+      {toastMsg && (
+        <div className="mx-4 mt-3 p-3 bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200/50 dark:border-indigo-900/40 rounded-xl flex items-center justify-between text-xs font-semibold text-indigo-800 dark:text-indigo-300 animate-in fade-in slide-in-from-top-2 duration-200 shadow-sm z-10">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-indigo-500 animate-pulse shrink-0" />
+            <span>{toastMsg}</span>
+          </div>
+          <button
+            onClick={() => setToastMsg(null)}
+            className="p-1 hover:bg-indigo-100 dark:hover:bg-indigo-950/60 rounded text-indigo-600 dark:text-indigo-400 cursor-pointer"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Document Intelligence Collapsible Drawer */}
+      {documents.filter((doc) => doc.isSelected).length === 1 && (
+        <div className="flex flex-col shrink-0 theme-transition select-none z-10">
+          {/* Collapsed/Header Compact Trigger */}
+          <button
+            onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+            className="w-full bg-bg-surface hover:bg-bg-secondary/40 border-b border-border-custom px-5 py-2.5 flex items-center justify-between transition-all duration-200 cursor-pointer text-left focus:outline-none"
+            title={isDrawerOpen ? "Collapse AI document understanding tools" : "Expand AI document understanding tools"}
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="p-1 bg-indigo-500/10 text-indigo-500 rounded-lg">
+                <Sparkles className="h-3.5 w-3.5 text-indigo-500 animate-pulse" />
+              </div>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-text-primary flex items-center gap-1.5">
+                  Document Intelligence
+                </span>
+                <p className="text-[10px] text-text-muted font-medium mt-0.5">
+                  AI-powered document understanding tools
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <span className="text-[9px] font-extrabold uppercase tracking-widest text-text-muted bg-bg-secondary/60 px-2 py-0.5 border border-border-custom rounded-md transition-colors">
+                {isDrawerOpen ? "Hide Tools" : "Show Tools"}
+              </span>
+              <ChevronDown
+                className={`h-4 w-4 text-text-muted transition-transform duration-300 ease-in-out ${
+                  isDrawerOpen ? "rotate-180 text-text-primary" : ""
+                }`}
+              />
+            </div>
+          </button>
+
+          {/* Drawer Expandable Section */}
+          <div
+            className={`transition-all duration-300 ease-in-out overflow-hidden bg-bg-app ${
+              isDrawerOpen ? "max-h-96 opacity-100 border-b border-border-custom" : "max-h-0 opacity-0 border-b-0 pointer-events-none"
+            }`}
+          >
+            <div className="px-5 py-4 flex flex-col sm:flex-row sm:flex-wrap items-stretch gap-3.5">
+              {/* Premium Action Card: Mind Map */}
+              <button
+                onClick={() => {
+                  const selectedDoc = documents.find((doc) => doc.isSelected);
+                  if (selectedDoc) {
+                    onGenerateMindMap?.(selectedDoc);
+                  }
+                }}
+                className="flex items-start gap-3.5 p-3.5 bg-bg-surface hover:bg-indigo-50/30 dark:hover:bg-indigo-950/15 border border-border-custom hover:border-indigo-200/50 dark:hover:border-indigo-900/40 rounded-xl transition-all duration-200 cursor-pointer text-left w-full sm:w-[calc(50%-8px)] lg:w-72 group shadow-2xs hover:shadow-xs active:scale-98 shrink-0"
+                title="Generate interactive Mind Map for this document"
+              >
+                <div className="text-2xl group-hover:scale-110 transition-transform duration-200 shrink-0">🧠</div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-xs font-bold text-indigo-700 dark:text-indigo-400 group-hover:text-indigo-800 dark:group-hover:text-indigo-300 transition-colors leading-snug">
+                    Mind Map
+                  </h4>
+                  <p className="text-[10px] text-text-muted mt-0.5 line-clamp-1 leading-normal font-medium">
+                    Visualize major concepts
+                  </p>
+                </div>
+              </button>
+
+              {/* Premium Action Card: Quiz Generator */}
+              <button
+                onClick={() => setToastMsg("📝 Quiz Generator: Coming soon in the next sprint!")}
+                className="flex items-start gap-3.5 p-3.5 bg-bg-surface hover:bg-bg-secondary/40 border border-border-custom hover:border-border-custom/80 rounded-xl transition-all duration-200 cursor-pointer text-left w-full sm:w-[calc(50%-8px)] lg:w-72 group shadow-2xs active:scale-98 shrink-0"
+                title="Test your understanding with AI practice quizzes"
+              >
+                <div className="text-2xl group-hover:scale-110 transition-transform duration-200 shrink-0">📝</div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 justify-between">
+                    <h4 className="text-xs font-bold text-text-secondary group-hover:text-text-primary transition-colors leading-snug truncate">
+                      Quiz Generator
+                    </h4>
+                    <span className="text-[8px] font-extrabold uppercase bg-bg-app border border-border-custom text-text-muted px-1.5 py-0.5 rounded shrink-0">
+                      Next
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-text-muted mt-0.5 line-clamp-1 leading-normal font-medium">
+                    Test understanding
+                  </p>
+                </div>
+              </button>
+
+              {/* Premium Action Card: Study Guide */}
+              <button
+                onClick={() => setToastMsg("📚 Study Guide: Coming soon in the next sprint!")}
+                className="flex items-start gap-3.5 p-3.5 bg-bg-surface hover:bg-bg-secondary/40 border border-border-custom hover:border-border-custom/80 rounded-xl transition-all duration-200 cursor-pointer text-left w-full sm:w-[calc(50%-8px)] lg:w-72 group shadow-2xs active:scale-98 shrink-0"
+                title="Synthesize structured study revision outlines"
+              >
+                <div className="text-2xl group-hover:scale-110 transition-transform duration-200 shrink-0">📚</div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 justify-between">
+                    <h4 className="text-xs font-bold text-text-secondary group-hover:text-text-primary transition-colors leading-snug truncate">
+                      Study Guide
+                    </h4>
+                    <span className="text-[8px] font-extrabold uppercase bg-bg-app border border-border-custom text-text-muted px-1.5 py-0.5 rounded shrink-0">
+                      Next
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-text-muted mt-0.5 line-clamp-1 leading-normal font-medium">
+                    Structured revision
+                  </p>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Canvas Viewer Container */}
       <div
