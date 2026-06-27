@@ -6,6 +6,7 @@ import PDFViewerPanel from "./components/PDFViewerPanel";
 import ApiKeyModal from "./components/ApiKeyModal";
 import MindMapPanel from "./components/MindMapPanel";
 import QuizPanel from "./components/QuizPanel";
+import StudyGuidePanel from "./components/StudyGuidePanel";
 import { DocumentFile, ChatMessage } from "./types";
 import { Sparkles, Key, RefreshCw, LogOut, FileText, AlertTriangle, X, Sun, Moon } from "lucide-react";
 
@@ -66,6 +67,8 @@ export default function App() {
   const [mindMapDoc, setMindMapDoc] = useState<DocumentFile | null>(null);
   const [isQuizOpen, setIsQuizOpen] = useState(false);
   const [quizDoc, setQuizDoc] = useState<DocumentFile | null>(null);
+  const [isStudyGuideOpen, setIsStudyGuideOpen] = useState(false);
+  const [studyGuideDoc, setStudyGuideDoc] = useState<DocumentFile | null>(null);
 
   // Panel resizing states
   const [libraryWidth, setLibraryWidth] = useState<number>(() => {
@@ -349,6 +352,16 @@ export default function App() {
     setIsQuizOpen(true);
   };
 
+  const handleGenerateStudyGuide = (doc: DocumentFile) => {
+    if (!apiKey) {
+      setIsApiKeyOpen(true);
+      setErrorAlert("Please configure a valid Gemini API key first.");
+      return;
+    }
+    setStudyGuideDoc(doc);
+    setIsStudyGuideOpen(true);
+  };
+
   const handleAskInChat = (question: string) => {
     handleSendMessage(question);
   };
@@ -527,6 +540,7 @@ export default function App() {
             documents={documents}
             onGenerateMindMap={handleGenerateMindMap}
             onGenerateQuiz={handleGenerateQuiz}
+            onGenerateStudyGuide={handleGenerateStudyGuide}
           />
         </div>
 
@@ -576,8 +590,14 @@ export default function App() {
         apiKey={apiKey}
         selectedDocuments={documents}
       />
+
+      <StudyGuidePanel
+        isOpen={isStudyGuideOpen}
+        onClose={() => setIsStudyGuideOpen(false)}
+        document={studyGuideDoc}
+        apiKey={apiKey}
+        selectedDocuments={documents}
+      />
     </div>
   );
 }
-
-

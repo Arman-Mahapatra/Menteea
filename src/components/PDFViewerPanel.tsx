@@ -25,6 +25,7 @@ interface PDFViewerPanelProps {
   documents: DocumentFile[];
   onGenerateMindMap?: (doc: DocumentFile) => void;
   onGenerateQuiz?: (doc: DocumentFile) => void;
+  onGenerateStudyGuide?: (doc: DocumentFile) => void;
 }
 
 type ZoomMode = "fit-width" | "fit-page" | "manual";
@@ -39,6 +40,7 @@ export default function PDFViewerPanel({
   documents,
   onGenerateMindMap,
   onGenerateQuiz,
+  onGenerateStudyGuide,
 }: PDFViewerPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -481,20 +483,20 @@ export default function PDFViewerPanel({
 
               {/* Premium Action Card: Study Guide */}
               <button
-                onClick={() => setToastMsg("📚 Study Guide: Coming soon in the next sprint!")}
-                className="flex items-start gap-3.5 p-3.5 bg-bg-surface hover:bg-bg-secondary/40 border border-border-custom hover:border-border-custom/80 rounded-xl transition-all duration-200 cursor-pointer text-left w-full sm:w-[calc(50%-8px)] lg:w-72 group shadow-2xs active:scale-98 shrink-0"
+                onClick={() => {
+                  const selectedDoc = documents.find((doc) => doc.isSelected);
+                  if (selectedDoc) {
+                    onGenerateStudyGuide?.(selectedDoc);
+                  }
+                }}
+                className="flex items-start gap-3.5 p-3.5 bg-bg-surface hover:bg-indigo-50/30 dark:hover:bg-indigo-950/15 border border-border-custom hover:border-indigo-200/50 dark:hover:border-indigo-900/40 rounded-xl transition-all duration-200 cursor-pointer text-left w-full sm:w-[calc(50%-8px)] lg:w-72 group shadow-2xs hover:shadow-xs active:scale-98 shrink-0"
                 title="Synthesize structured study revision outlines"
               >
                 <div className="text-2xl group-hover:scale-110 transition-transform duration-200 shrink-0">📚</div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 justify-between">
-                    <h4 className="text-xs font-bold text-text-secondary group-hover:text-text-primary transition-colors leading-snug truncate">
-                      Study Guide
-                    </h4>
-                    <span className="text-[8px] font-extrabold uppercase bg-bg-app border border-border-custom text-text-muted px-1.5 py-0.5 rounded shrink-0">
-                      Next
-                    </span>
-                  </div>
+                  <h4 className="text-xs font-bold text-indigo-700 dark:text-indigo-400 group-hover:text-indigo-800 dark:group-hover:text-indigo-300 transition-colors leading-snug">
+                    Study Guide
+                  </h4>
                   <p className="text-[10px] text-text-muted mt-0.5 line-clamp-1 leading-normal font-medium">
                     Structured revision
                   </p>

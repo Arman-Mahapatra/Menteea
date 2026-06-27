@@ -414,6 +414,164 @@ Return a single JSON object strictly matching the schema requested.
 
     return JSON.parse(resultText);
   }
+
+  /**
+   * Generates a structured comprehensive Revision Study Guide based on the document context.
+   */
+  public async generateStudyGuide(
+    apiKey: string,
+    documentName: string,
+    documentContext: string
+  ): Promise<any> {
+    logger.info(`Generating study guide for "${documentName}" via Gemini API`);
+    const ai = this.getGenAI(apiKey);
+
+    const prompt = `Analyze the uploaded document named "${documentName}" and generate a comprehensive structured study and revision guide.
+The study guide must transform this document into a highly detailed learning resource.
+Ground everything strictly in the document context. Do not hallucinate external topics.
+If there are mathematical formulas or technical equations in the text, extract them into the formulae array. If there are none, return an empty array for formulae.
+
+Document Content:
+${documentContext.slice(0, 150000)}
+`;
+
+    const systemInstruction = `You are Menteea's Study Guide Generator. Analyze the document and build a high-quality, comprehensive study workspace companion.
+Return a single JSON object strictly matching the schema requested.
+- Provide a clear title, a detailed chapter overview (including learning objectives), key concepts (including explanation and why it matters), important definitions, formulae (leave empty if none exist), sequential processes or workflows, common student exam mistakes, a revision checklist, and an interactive flashcard deck of 10-20 cards.`;
+
+    const response = await this.callWithRetry(() =>
+      ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+        config: {
+          systemInstruction,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              title: {
+                type: Type.STRING,
+                description: "Structured, descriptive title of the study guide."
+              },
+              overview: {
+                type: Type.STRING,
+                description: "A comprehensive chapter overview including what the chapter teaches and learning objectives."
+              },
+              keyConcepts: {
+                type: Type.ARRAY,
+                description: "List of major concepts with explanation and practical importance.",
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    concept: { type: Type.STRING },
+                    explanation: { type: Type.STRING },
+                    whyItMatters: { type: Type.STRING }
+                  },
+                  required: ["concept", "explanation", "whyItMatters"]
+                }
+              },
+              importantDefinitions: {
+                type: Type.ARRAY,
+                description: "Key terms and their respective concise study definitions.",
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    term: { type: Type.STRING },
+                    definition: { type: Type.STRING }
+                  },
+                  required: ["term", "definition"]
+                }
+              },
+              formulae: {
+                type: Type.ARRAY,
+                description: "Formulas, equations, or mathematical representations (leave empty if none exist in the document).",
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    formula: { type: Type.STRING, description: "The mathematical formula, equation, or short relationship." },
+                    meaning: { type: Type.STRING, description: "Conceptual meaning of the relationship." },
+                    variables: { type: Type.STRING, description: "Detailed list of variables and what they represent." },
+                    usage: { type: Type.STRING, description: "How and when to apply this formula." }
+                  },
+                  required: ["formula", "meaning", "variables", "usage"]
+                }
+              },
+              processes: {
+                type: Type.ARRAY,
+                description: "Workflows, sequence of steps, or system processes broken down chronologically.",
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    name: { type: Type.STRING, description: "The name of the process or sequence." },
+                    steps: {
+                      type: Type.ARRAY,
+                      items: { type: Type.STRING },
+                      description: "List of clean sequential steps (e.g. 'Step 1...', 'Step 2...')."
+                    }
+                  },
+                  required: ["name", "steps"]
+                }
+              },
+              examTips: {
+                type: Type.ARRAY,
+                description: "Strategic tips, key focal points for preparation, and advice for assessments.",
+                items: { type: Type.STRING }
+              },
+              commonMistakes: {
+                type: Type.ARRAY,
+                description: "Common student errors, misconceptions, and confusion points with correct insights.",
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    mistake: { type: Type.STRING, description: "What students commonly confuse, mix up, or miscalculate." },
+                    correction: { type: Type.STRING, description: "The correct concept or accurate methodology." },
+                    explanation: { type: Type.STRING, description: "Deep pedagogical explanation of why the mistake happens and how to avoid it." }
+                  },
+                  required: ["mistake", "correction", "explanation"]
+                }
+              },
+              revisionChecklist: {
+                type: Type.ARRAY,
+                description: "Highly actionable checkable revision milestones (e.g., 'Understand TDM concept', 'Compare FDM vs TDM').",
+                items: { type: Type.STRING }
+              },
+              flashcards: {
+                type: Type.ARRAY,
+                description: "A solid deck of 10 to 20 flashcards for rapid interactive revision.",
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    question: { type: Type.STRING },
+                    answer: { type: Type.STRING }
+                  },
+                  required: ["question", "answer"]
+                }
+              }
+            },
+            required: [
+              "title",
+              "overview",
+              "keyConcepts",
+              "importantDefinitions",
+              "formulae",
+              "processes",
+              "examTips",
+              "commonMistakes",
+              "revisionChecklist",
+              "flashcards"
+            ]
+          }
+        }
+      })
+    );
+
+    const resultText = response.text;
+    if (!resultText) {
+      throw new Error("No response from Gemini API.");
+    }
+
+    return JSON.parse(resultText);
+  }
 }
 export default ChatService;
 
