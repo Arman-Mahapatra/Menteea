@@ -13,7 +13,7 @@
 ![Gemini](https://img.shields.io/badge/AI-Gemini-purple)
 ![License](https://img.shields.io/badge/license-MIT-brightgreen)
 
-[Live Demo](#) • [Features](#features) • [Architecture](#architecture) • [Installation](#installation) • [Roadmap](#roadmap)
+[Live Demo](https://menteea-production.up.railway.app) • [Features](#features) • [Architecture](#architecture) • [Installation](#installation) • [Roadmap](#roadmap)
 
 </div>
 
