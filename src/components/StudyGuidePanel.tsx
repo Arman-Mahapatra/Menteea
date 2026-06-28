@@ -602,7 +602,7 @@ export default function StudyGuidePanel({
                   <span>Menteea AI Engine</span>
                 </div>
                 <p className="text-[9px] text-text-muted mt-1 leading-normal font-medium">
-                  Dynamic evaluation leverages Google Gemini-3.5-flash for real-time document mapping.
+                  Dynamic evaluation leverages Google Gemini 2.5 Flash for real-time document mapping.
                 </p>
               </div>
             </aside>

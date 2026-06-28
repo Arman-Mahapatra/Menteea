@@ -1,489 +1,511 @@
 # Menteea
 
-> **Knowledge in Motion.**
->
-> Menteea is an AI-powered research workspace that transforms static documents into interactive understanding. Upload PDFs, textbooks, lecture notes, research papers, and reports, then explore them through grounded conversations, intelligent summaries, quizzes, study guides, mind maps, and evidence-backed insights.
+<div align="center">
+
+### Knowledge in Motion.
+
+**An AI Research Operating System that transforms PDFs into grounded conversations, study guides, flashcards, quizzes, mind maps, and exportable knowledge artifacts.**
+
+![Version](https://img.shields.io/badge/version-v0.2.0-blue)
+![React](https://img.shields.io/badge/React-19-61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
+![Node.js](https://img.shields.io/badge/Node.js-Express-green)
+![Gemini](https://img.shields.io/badge/AI-Gemini-purple)
+![License](https://img.shields.io/badge/license-MIT-brightgreen)
+
+[Live Demo](#) • [Features](#features) • [Architecture](#architecture) • [Installation](#installation) • [Roadmap](#roadmap)
+
+</div>
 
 ---
 
-## Overview
-
-Modern knowledge work is fragmented.
-
-Students, researchers, and professionals spend hours reading dense documents, switching between note-taking tools, searching for key concepts, creating revision materials, and manually connecting ideas across sources.
-
-Menteea was built to solve this problem.
-
-Instead of treating documents as static files, Menteea transforms them into an intelligent workspace where information can be explored, questioned, summarized, and converted into actionable understanding.
-
-The platform combines modern Retrieval-Augmented Generation (RAG), document intelligence workflows, caching systems, and interactive learning tools into a single unified experience.
+![Menteea Hero](docs/images/hero-landing.png)
 
 ---
 
-## Key Features
+# What is Menteea?
 
-### Intelligent Document Upload
+Most AI tools answer questions.
 
-Upload:
+Most PDF readers display documents.
 
-* Research papers
-* Lecture notes
-* Textbooks
-* Technical reports
-* Study materials
-* Documentation
+**Menteea transforms documents into understanding.**
 
-Menteea automatically processes, indexes, and prepares documents for semantic retrieval.
+Upload textbooks, lecture notes, research papers, documentation, or technical references and convert them into an interactive knowledge workspace powered by Retrieval-Augmented Generation (RAG), semantic retrieval, AI-assisted learning, and intelligent knowledge synthesis.
+
+Instead of forcing users to jump between multiple applications, Menteea unifies document reading, research, revision, assessment, and knowledge exploration into a single workspace.
 
 ---
 
-### AI-Powered Research Chat
-
-Ask natural language questions about your documents.
-
-Examples:
-
-* Explain this chapter in simple terms
-* What are the main findings?
-* Compare section 3 and section 7
-* Generate revision notes
-* What assumptions does the author make?
-
-Responses are grounded in retrieved document content rather than generic model knowledge.
-
----
-
-### Automatic Document Summaries
-
-Generate concise summaries of uploaded documents.
-
-Summaries provide:
-
-* Core themes
-* Major concepts
-* Key takeaways
-* Important insights
-
----
-
-### Study Guide Generation
-
-Convert documents into structured learning material including:
-
-* Topic breakdowns
-* Important concepts
-* Revision notes
-* Study plans
-
----
-
-### Quiz Generation
-
-Automatically generate assessment questions from uploaded documents.
-
-Supports:
-
-* Concept checks
-* Revision practice
-* Knowledge reinforcement
-
----
-
-### Mind Map Generation
-
-Transform dense information into visual knowledge structures.
-
-Mind maps help users:
-
-* Understand relationships
-* Visualize concepts
-* Build mental models
-* Explore topic hierarchies
-
----
-
-### Multi-Document Research Workspace
-
-Work across multiple documents simultaneously.
-
-Menteea can reason across selected documents within a single workspace context.
-
----
-
-### Persistent Research Sessions
-
-Workspace state is preserved across page reloads.
-
-Features preserved:
-
-* Uploaded documents
-* PDF viewer state
-* Theme preferences
-* Research workspace context
-
----
-
-### Dark & Light Mode
-
-Carefully designed themes optimized for extended reading sessions.
-
----
-
-## Architecture
-
-Menteea follows a modular service-oriented architecture.
+# Core Workflow
 
 ```text
-User
- │
- ▼
-Frontend (React + TypeScript)
- │
- ▼
-Document Pipeline
- │
- ├── PDF Extraction
- ├── Chunking
- ├── Embedding Generation
- └── Vector Indexing
- │
- ▼
-Retrieval Layer
- │
- ├── Semantic Search
- ├── Context Selection
- └── Cache Optimization
- │
- ▼
-Gemini Integration
- │
- ▼
-Response Generation
+Upload Documents
+        ↓
+PDF Processing
+        ↓
+Semantic Retrieval
+        ↓
+Grounded AI Chat
+        ↓
+Personalized Revision Workspace
+        ↓
+Flashcards
+        ↓
+Interactive Quizzes
+        ↓
+Knowledge Maps
+        ↓
+Export & Revision
 ```
 
 ---
 
-## RAG Pipeline
+# Workspace
 
-### 1. Document Ingestion
+The central workspace combines document management, PDF reading, and grounded AI conversations.
 
-Uploaded PDFs are parsed and converted into structured text.
+![Workspace](docs/images/workspace-overview-dark.png)
 
-### 2. Intelligent Chunking
+### Workspace Features
 
-Documents are divided into retrieval-friendly semantic chunks.
-
-### 3. Embedding Generation
-
-Embeddings are generated for each chunk using Gemini embeddings.
-
-### 4. Vector Indexing
-
-Embeddings are stored for semantic similarity search.
-
-### 5. Query Retrieval
-
-Relevant chunks are selected based on similarity scores.
-
-### 6. Context Construction
-
-Only the most relevant document sections are included.
-
-### 7. Response Generation
-
-Gemini generates grounded responses using retrieved evidence.
+- Multi-document research environment
+- Side-by-side PDF viewer
+- Citation-grounded AI responses
+- Follow-up research suggestions
+- Persistent workspace state
+- Dark & light themes
+- Context-aware document selection
 
 ---
 
-## Performance Optimizations
+# AI Research Chat
 
-Menteea includes several production-focused optimizations.
+Ask questions directly against your documents.
 
-### SHA-256 Document Deduplication
+Menteea retrieves relevant document chunks, builds contextual prompts, and generates grounded answers with citations.
 
-Duplicate documents are automatically detected using content hashing.
+![Research Chat](docs/images/research-chat.png)
 
-Benefits:
+### Capabilities
 
-* Prevents duplicate indexing
-* Prevents duplicate summaries
-* Saves tokens
-* Improves upload speed
+- Retrieval-Augmented Generation (RAG)
+- Citation-aware responses
+- Multi-document reasoning
+- Semantic retrieval
+- Context-grounded answers
+- Follow-up question generation
+
+---
+
+# Intelligent PDF Reading
+
+Documents remain fully accessible while AI features operate on top of them.
+
+![PDF Viewer](docs/images/pdf-viewer.png)
+
+### Features
+
+- Native PDF rendering
+- Page navigation
+- Zoom controls
+- Fullscreen mode
+- Reading-state persistence
+- Multi-document support
 
 ---
 
-### Embedding Cache
+# Personalized Revision Workspace
 
-Previously generated embeddings are cached and reused.
+Transform dense academic material into structured revision content.
 
-Benefits:
+![Study Guide](docs/images/study-guide.png)
 
-* Faster indexing
-* Lower API usage
-* Reduced latency
+### Generated Learning Assets
+
+- Chapter Overviews
+- Key Concepts
+- Important Definitions
+- Formulae & Equations
+- Processes & Workflows
+- Revision Checklists
+- Learning Milestones
 
 ---
+
+# Interactive Flashcards
+
+Convert document content into active recall exercises designed for retention and rapid revision.
+
+![Flashcards](docs/images/flashcards.png)
+
+### Flashcard Features
+
+- AI-generated flashcard decks
+- Question / Answer mode
+- Sequential review navigation
+- Active recall learning
+- Exam-focused revision
+- Document-grounded content
+- Integrated with Study Guides
+
+---
+
+# Interactive Knowledge Assessment
+
+Generate document-specific quizzes instantly.
+
+![Quiz](docs/images/quiz-q-reasoning.png)
+
+### Quiz Features
+
+- AI-generated questions
+- Topic categorization
+- Answer explanations
+- Performance analysis
+- Knowledge gap detection
+- Regeneration support
+
+---
+
+# Assessment Analytics
+
+![Quiz Results](docs/images/quiz-result.png)
+
+Users receive:
+
+- Topic-level breakdowns
+- Strong-area identification
+- Weak-area detection
+- Guided review recommendations
+- Personalized learning feedback
+
+---
+
+# Knowledge Maps
+
+Visualize how concepts connect across an entire document.
+
+![Mind Map](docs/images/mindmap-view.png)
+
+### Mind Map Features
+
+- Interactive graph exploration
+- Concept hierarchy visualization
+- Cross-reference navigation
+- AI-generated explanations
+- Concept inspector
+- Chat integration
+
+---
+
+# Multi-Document Reasoning
+
+Menteea supports reasoning across multiple selected documents simultaneously.
+
+![Multi Document Workspace](docs/images/multi-document.png)
+
+This enables:
+
+- Cross-document comparisons
+- Research synthesis
+- Multi-source reasoning
+- Unified contextual retrieval
+- Better research workflows
+
+---
+
+# Export Center
+
+Generated learning artifacts can be exported for offline use.
+
+![Export Center](docs/images/study-guide-export.png)
+
+### Supported Formats
+
+- PDF
+- Microsoft Word (.docx)
+- Markdown (.md)
+
+---
+
+# Features
+
+### Research
+
+- Grounded AI Chat
+- Citation-based Answers
+- Multi-Document Retrieval
+- Semantic Search
+
+### Learning
+
+- Personalized Study Guides
+- Flashcard Generation
+- Interactive Quizzes
+- Knowledge Assessment
+
+### Knowledge Exploration
+
+- Interactive Mind Maps
+- Concept Relationships
+- Knowledge Navigation
+
+### Productivity
+
+- Export System
+- Workspace Persistence
+- Dark & Light Themes
+- Document Library
+
+---
+
+# Architecture
+
+```mermaid
+flowchart LR
+
+A[PDF Upload]
+B[Document Extraction]
+C[Chunking]
+D[Embedding Generation]
+E[Vector Store]
+F[Semantic Retrieval]
+G[Prompt Assembly]
+H[Gemini 2.5 Flash]
+I[Grounded Response]
+
+A --> B
+B --> C
+C --> D
+D --> E
+E --> F
+F --> G
+G --> H
+H --> I
+```
+
+---
+
+# System Architecture
+
+```text
+Frontend (React + TypeScript)
+│
+├── Library Panel
+├── PDF Viewer
+├── Workspace Chat
+├── Study Guide Engine
+├── Flashcard Engine
+├── Quiz Engine
+├── Mind Map Engine
+└── Export Center
+
+Backend (Node.js + Express)
+│
+├── ChatService
+├── RetrievalService
+├── DocumentService
+├── EmbeddingService
+└── VectorStore
+
+AI Layer
+│
+├── Gemini 2.5 Flash
+├── Semantic Retrieval
+└── Grounded Generation
+```
+
+---
+
+# Performance Optimizations
+
+### SHA-256 Deduplication
+
+Prevents duplicate document indexing.
 
 ### Retrieval Cache
 
-Frequently repeated queries reuse cached retrieval results.
+Avoids repeated retrieval computations.
 
-Benefits:
+### Embedding Cache
 
-* Faster responses
-* Reduced compute overhead
+Reuses previously generated embeddings.
 
----
+### LRU Cache Management
 
-### Confidence-Based Retrieval
+Memory-safe bounded cache design.
 
-High-confidence searches automatically reduce retrieval context size.
+### IndexedDB Persistence
 
-Benefits:
+Workspace survives refreshes and browser restarts.
 
-* Lower token consumption
-* Faster generation
-* Improved efficiency
+### Smart Retrieval
 
----
-
-### Bounded LRU Cache
-
-Embedding caches use a Least Recently Used strategy to prevent memory growth.
-
-Benefits:
-
-* Predictable memory usage
-* Long-term stability
+Only the most relevant chunks are sent to the model.
 
 ---
 
-## Security & Reliability
-
-### API Key Isolation
-
-User API keys remain isolated to individual browser sessions.
-
-No shared keys are used.
-
----
+# Security & Reliability
 
 ### Rate Limiting
 
-Critical endpoints are protected against abuse.
+| Endpoint    | Limit  |
+| ----------- | ------ |
+| Chat        | 60/min |
+| Upload      | 10/min |
+| Export      | 20/min |
+| AI Features | 20/min |
 
-Protected routes include:
+### Defensive Controls
 
-* Chat
-* Uploads
-* Exports
-* AI generation endpoints
+- Request validation
+- Error boundaries
+- Graceful AI failure handling
+- Document size limits
+- Page count limits
+- Character extraction limits
 
----
+### Reliability Features
 
-### Large Document Protection
-
-Client-side safeguards prevent excessive memory consumption.
-
-Current limits:
-
-* 25 MB file size
-* 1000 pages
-* 1.5 million extracted characters
-
----
-
-### Graceful Failure Handling
-
-Menteea continues functioning even if summary generation fails.
-
-Users can still:
-
-* Chat
-* Generate quizzes
-* Generate study guides
-* Explore documents
+- Persistent workspace state
+- Retry handling
+- Cache invalidation
+- Recovery after refresh
 
 ---
 
-## Technology Stack
+# Tech Stack
 
 ### Frontend
 
-* React
-* TypeScript
-* Vite
-* Tailwind CSS
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- IndexedDB
 
 ### Backend
 
-* Node.js
-* Express
-* TypeScript
+- Node.js
+- Express
+- TypeScript
 
-### AI Layer
+### AI
 
-* Gemini Flash
+- Google Gemini 2.5 Flash
+- Retrieval-Augmented Generation
+- Semantic Search
 
 ### Document Processing
 
-* PDF.js
-* Semantic Chunking
-* Vector Retrieval
-
-### Storage
-
-* IndexedDB
-* Browser Persistence
-* In-Memory Vector Store
+- PDF Parsing
+- Text Extraction
+- Chunking Pipeline
 
 ---
 
-## Project Structure
+# Installation
 
-```text
-src/
-├── components/
-├── hooks/
-├── utils/
-├── types/
-
-server/
-├── api/
-├── services/
-├── models/
-├── utils/
-
-dist/
-```
-
----
-
-## Installation
-
-### Clone Repository
+## Clone Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/yourusername/menteea.git
 cd menteea
 ```
 
-### Install Dependencies
+## Install Dependencies
 
 ```bash
 npm install
 ```
 
-### Configure Environment
+## Environment Variables
 
 Create:
 
-```env
+```bash
 .env
 ```
 
-Example:
+Add:
 
 ```env
-GEMINI_API_KEY=your_key_here
+GEMINI_API_KEY=your_api_key_here
 ```
 
-### Start Development Server
+## Run Development Server
 
 ```bash
 npm run dev
 ```
 
-### Production Build
+Application:
 
-```bash
-npm run build
+```text
+http://localhost:5173
 ```
 
 ---
 
-## Future Roadmap
+# Roadmap
 
-### Sprint 3
+## Completed
 
-* Advanced citation tracking
-* Improved source attribution
-* Cross-document knowledge graphs
-* Enhanced workspace intelligence
+- Grounded AI Chat
+- Multi-Document Retrieval
+- PDF Viewer
+- Study Guides
+- Flashcards
+- Interactive Quizzes
+- Knowledge Maps
+- Export Center
+- Persistence Layer
+- Retrieval Cache
+- Embedding Cache
+- SHA-256 Deduplication
 
-### Sprint 4
+## Planned
 
-* User accounts
-* Cloud synchronization
-* Workspace sharing
-* Team collaboration
-
-### Sprint 5
-
-* Persistent vector database
-* Large-scale document collections
-* Research projects
-* Workspace analytics
-
-### Long-Term Vision
-
-Menteea aims to become an operating system for understanding knowledge.
-
-Instead of simply storing documents, future versions will help users:
-
-* Build knowledge networks
-* Conduct research
-* Learn faster
-* Generate insights
-* Connect information across disciplines
+- Research Notebook
+- Citation Explorer
+- Flashcard Scheduling
+- Research Collections
+- Collaborative Workspaces
+- Knowledge Graph Expansion
+- Linked Document Networks
 
 ---
 
-## Known Limitations
+# Why Menteea?
 
-Current version focuses on PDF-based workflows.
+Most educational AI tools focus on generating answers.
 
-Future versions may include:
+Menteea focuses on building understanding.
 
-* DOCX support
-* Web source ingestion
-* Audio transcription
-* Video understanding
-* Cloud document storage
+The objective is not simply to respond to questions, but to help learners, researchers, and professionals transform static documents into interactive knowledge systems that can be explored, studied, assessed, and retained.
 
 ---
 
-## Why Menteea?
-
-Most AI document tools stop at question answering.
-
-Menteea focuses on something larger:
-
-**Transforming information into understanding.**
-
-The goal is not merely retrieval.
-
-The goal is helping people think, learn, research, and create knowledge more effectively.
-
----
-
-## Author
+# Author
 
 **Arman Mahapatra**
 
-Creator of Menteea.
-
-Built as a portfolio project exploring AI-powered knowledge systems, document intelligence, Retrieval-Augmented Generation (RAG), and human-centered research workflows.
-
----
-
-## License
-
-This project is licensed under the MIT License.
+Computer Science & Engineering
+National Institute of Technology Silchar
 
 ---
 
-## Version
+# License
 
-Current Release: **v0.2.0**
+MIT License
 
+---
+
+<div align="center">
+
+### Knowledge in Motion.
+
+Transform documents into understanding.
+
+</div>

@@ -244,7 +244,7 @@ export default function ApiKeyModal({ isOpen, onClose, currentKey, onSaveKey }: 
 
                     <div className="text-text-muted">Model:</div>
                     <div className="font-mono text-[10px] text-text-primary text-right">
-                      gemini-3.5-flash
+                      gemini-2.5-flash
                     </div>
 
                     <div className="text-text-muted">Status:</div>
