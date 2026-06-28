@@ -32,7 +32,9 @@ import {
   CheckCircle2,
   FileSpreadsheet,
   Layers,
-  Sparkle
+  Sparkle,
+  Lightbulb,
+  Network
 } from "lucide-react";
 
 interface LandingPageProps {
@@ -43,6 +45,23 @@ interface LandingPageProps {
 }
 
 export default function LandingPage({ onStart, onOpenApiKey, hasApiKey, onOpenHelpCenter }: LandingPageProps) {
+  const heroRef = useRef<HTMLDivElement>(null);
+
+  // Performance-optimized mouse tracker for premium parallax layers
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero) return;
+    const handleMove = (e: MouseEvent) => {
+      const rect = hero.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width - 0.5;
+      const y = (e.clientY - rect.top) / rect.height - 0.5;
+      hero.style.setProperty('--mx', `${x}`);
+      hero.style.setProperty('--my', `${y}`);
+    };
+    window.addEventListener('mousemove', handleMove);
+    return () => window.removeEventListener('mousemove', handleMove);
+  }, []);
+
   // Tabs for the main interactive sandbox
   const [activeTab, setActiveTab] = useState<"reader" | "mindmap" | "quiz" | "guide">("reader");
   const [selectedMindMapNode, setSelectedMindMapNode] = useState<string>("superposition");
@@ -241,7 +260,251 @@ export default function LandingPage({ onStart, onOpenApiKey, hasApiKey, onOpenHe
       <main className="relative z-10 flex-1 flex flex-col items-center">
         
         {/* ================= SECTION 1: HERO (ABOVE THE FOLD REFINED) ================= */}
-        <section className="w-full max-w-7xl px-6 sm:px-8 pt-16 pb-8 flex flex-col items-center text-center">
+        <section ref={heroRef} className="relative w-full max-w-7xl px-6 sm:px-8 pt-16 pb-8 flex flex-col items-center text-center">
+          {/* Subtle Premium "Knowledge Universe" Background */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden -z-10">
+            {/* Inline CSS styles for keyframes, depth, and premium animations */}
+            <style>{`
+              @keyframes hero-twinkle {
+                0%, 100% { opacity: 0.08; }
+                50% { opacity: 0.35; }
+              }
+              @keyframes hero-rotate-cw {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+              }
+              @keyframes hero-rotate-ccw {
+                from { transform: rotate(360deg); }
+                to { transform: rotate(0deg); }
+              }
+              @keyframes connection-pulse-slow {
+                0%, 100% { opacity: 0.01; }
+                50% { opacity: 0.14; }
+              }
+              @keyframes connection-pulse-alt {
+                0%, 100% { opacity: 0.12; }
+                50% { opacity: 0.02; }
+              }
+              @keyframes nebula-pulse {
+                0%, 100% { opacity: 0.7; transform: scale(1); }
+                50% { opacity: 0.95; transform: scale(1.05); }
+              }
+            `}</style>
+
+            {/* Ambient Multi-layered Subtle Nebula-like Gradients (Behind Grid) */}
+            <div className="absolute inset-0 bg-[#02040a] -z-20">
+              {/* Very faint deep navy base wash */}
+              <div className="absolute top-[-20%] left-[10%] w-[120%] h-[120%] bg-[radial-gradient(ellipse_at_top,rgba(15,23,42,0.3),rgba(12,10,36,0.06)_50%,transparent_80%)] pointer-events-none" />
+              
+              {/* Soft, blended dark indigo nebula */}
+              <div 
+                className="absolute top-[-10%] left-[20%] w-[800px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(24,24,64,0.16)_0%,rgba(15,23,42,0.04)_60%,transparent_100%)] pointer-events-none filter blur-[110px]"
+                style={{ animation: 'nebula-pulse 25s ease-in-out infinite' }}
+              />
+              
+              {/* Barely noticeable subtle violet accent nebula */}
+              <div 
+                className="absolute top-[15%] right-[10%] w-[700px] h-[550px] bg-[radial-gradient(circle_at_center,rgba(124,58,237,0.05)_0%,rgba(30,27,75,0.02)_55%,transparent_100%)] pointer-events-none filter blur-[120px]"
+                style={{ animation: 'nebula-pulse 32s ease-in-out infinite 4s' }}
+              />
+              
+              {/* Extremely dim cyan wash on the bottom left for depth contrast */}
+              <div className="absolute bottom-[20%] left-[-10%] w-[600px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(6,182,212,0.025)_0%,transparent_75%)] pointer-events-none filter blur-[100px]" />
+            </div>
+
+            {/* Soft Central Intelligence Core Glow centered behind the headline */}
+            <div className="absolute top-[28%] left-1/2 -translate-x-1/2 w-[950px] h-[520px] bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.065)_0%,rgba(168,85,247,0.035)_40%,transparent_70%)] pointer-events-none filter blur-[100px]" />
+            <div className="absolute top-[32%] left-1/2 -translate-x-1/2 w-[650px] h-[350px] bg-[radial-gradient(circle_at_center,rgba(139,92,246,0.04)_0%,transparent_75%)] pointer-events-none filter blur-[80px]" />
+
+            {/* Sparse Twinkling Star Field - Tiny, low opacity */}
+            <div className="absolute inset-0 opacity-20">
+              {[...Array(16)].map((_, i) => {
+                const top = (i * 8.3 + 14) % 100;
+                const left = (i * 12.7 + 9) % 100;
+                const size = i % 4 === 0 ? 0.8 : 1.2;
+                const delay = (i * 0.4).toFixed(1);
+                const duration = (4.0 + (i % 3) * 2.5).toFixed(1);
+                return (
+                  <div
+                    key={`star-polished-${i}`}
+                    className="absolute bg-slate-100 rounded-full"
+                    style={{
+                      top: `${top}%`,
+                      left: `${left}%`,
+                      width: `${size}px`,
+                      height: `${size}px`,
+                      opacity: i % 2 === 0 ? 0.15 : 0.28,
+                      animation: `hero-twinkle ${duration}s ease-in-out infinite ${delay}s`,
+                    }}
+                  />
+                );
+              })}
+            </div>
+
+            {/* Interactive Elegant Orbital Knowledge System */}
+            <div className="absolute inset-0">
+              
+              {/* ================= LAYER 3: BACKGROUND ORBIT (Furthest away, slight blur, low speed) ================= */}
+              <div
+                className="absolute top-[42%] left-1/2 w-[950px] h-[380px] md:w-[1240px] md:h-[480px] border border-t-slate-700/[0.04] border-b-slate-700/[0.02] border-l-transparent border-r-transparent rounded-full pointer-events-none"
+                style={{
+                  transform: 'translate(calc(-50% + var(--mx, 0) * 8px), calc(-50% + var(--my, 0) * 8px)) rotate(12deg)',
+                  transition: 'transform 0.65s cubic-bezier(0.16, 1, 0.3, 1)',
+                }}
+              >
+                {/* Slow Rotating Inner Group (90s orbit duration) */}
+                <div 
+                  className="absolute inset-0"
+                  style={{
+                    animation: 'hero-rotate-cw 90s linear infinite',
+                  }}
+                >
+                  {/* Subtle Connection Line 1 */}
+                  <div 
+                    className="absolute top-1/2 left-[10%] right-[10%] h-[0.5px] bg-gradient-to-r from-transparent via-slate-500/8 to-transparent"
+                    style={{
+                      transform: 'translateY(-50%) rotate(30deg)',
+                      animation: 'connection-pulse-slow 16s ease-in-out infinite',
+                    }}
+                  />
+
+                  {/* Node Background 1: Study Guide/Quiz (HelpCircle) - Smaller, slightly blurred */}
+                  <div 
+                    className="absolute top-[12%] left-[18%] -translate-x-1/2 -translate-y-1/2 bg-[#04060c]/85 border border-slate-900/40 p-2 rounded-xl shadow-sm blur-[0.4px] opacity-65"
+                    style={{
+                      animation: 'hero-rotate-ccw 90s linear infinite',
+                    }}
+                  >
+                    <HelpCircle className="h-3.5 w-3.5 text-slate-400" />
+                  </div>
+
+                  {/* Node Background 2: Chat Bubble (MessageSquare) - Smaller, slightly blurred */}
+                  <div 
+                    className="absolute bottom-[12%] right-[18%] translate-x-1/2 translate-y-1/2 bg-[#04060c]/85 border border-slate-900/40 p-2 rounded-xl shadow-sm blur-[0.4px] opacity-65"
+                    style={{
+                      animation: 'hero-rotate-ccw 90s linear infinite',
+                    }}
+                  >
+                    <MessageSquare className="h-3.5 w-3.5 text-slate-400" />
+                  </div>
+
+                  {/* Node Background 3: Database/Knowledge Base (Database) - Smaller, blurred */}
+                  <div 
+                    className="absolute top-[50%] right-[5%] translate-x-1/2 -translate-y-1/2 bg-[#04060c]/80 border border-slate-900/40 p-2 rounded-xl shadow-sm blur-[0.5px] opacity-60"
+                    style={{
+                      animation: 'hero-rotate-ccw 90s linear infinite',
+                    }}
+                  >
+                    <Database className="h-3.5 w-3.5 text-slate-500" />
+                  </div>
+                </div>
+              </div>
+
+              {/* ================= LAYER 2: MIDGROUND ORBIT (Medium depth & speed) ================= */}
+              <div
+                className="absolute top-[41%] left-1/2 w-[740px] h-[300px] md:w-[980px] md:h-[390px] border border-l-purple-500/[0.035] border-r-purple-500/[0.02] border-t-transparent border-b-transparent rounded-full pointer-events-none"
+                style={{
+                  transform: 'translate(calc(-50% + var(--mx, 0) * 18px), calc(-50% + var(--my, 0) * 18px)) rotate(-15deg)',
+                  transition: 'transform 0.65s cubic-bezier(0.16, 1, 0.3, 1)',
+                }}
+              >
+                {/* Mid Rotating Inner Group (68s orbit duration) */}
+                <div 
+                  className="absolute inset-0"
+                  style={{
+                    animation: 'hero-rotate-ccw 68s linear infinite',
+                  }}
+                >
+                  {/* Subtle Connection Line 2 */}
+                  <div 
+                    className="absolute top-1/2 left-[15%] right-[15%] h-[0.5px] bg-gradient-to-r from-transparent via-purple-500/12 to-transparent"
+                    style={{
+                      transform: 'translateY(-50%) rotate(-40deg)',
+                      animation: 'connection-pulse-alt 12s ease-in-out infinite 3s',
+                    }}
+                  />
+
+                  {/* Node Mid 1: Lightbulb Idea (Lightbulb) - Standard size */}
+                  <div 
+                    className="absolute top-[22%] right-[15%] translate-x-1/2 -translate-y-1/2 bg-[#04060c]/90 border border-slate-800/40 p-2.5 rounded-xl shadow-[0_0_12px_rgba(234,179,8,0.03)] opacity-90"
+                    style={{
+                      animation: 'hero-rotate-cw 68s linear infinite',
+                    }}
+                  >
+                    <Lightbulb className="h-4 w-4 text-slate-300" />
+                  </div>
+
+                  {/* Node Mid 2: Citation/Reference (BookmarkCheck) - Standard size */}
+                  <div 
+                    className="absolute bottom-[22%] left-[15%] -translate-x-1/2 translate-y-1/2 bg-[#04060c]/90 border border-slate-800/40 p-2.5 rounded-xl shadow-[0_0_12px_rgba(34,211,238,0.03)] opacity-90"
+                    style={{
+                      animation: 'hero-rotate-cw 68s linear infinite',
+                    }}
+                  >
+                    <BookmarkCheck className="h-4 w-4 text-slate-300" />
+                  </div>
+
+                  {/* Node Mid 3: Connection Node (Network) - Standard size */}
+                  <div 
+                    className="absolute top-[50%] left-[4%] -translate-x-1/2 -translate-y-1/2 bg-[#04060c]/90 border border-slate-800/30 p-2.5 rounded-xl shadow-[0_0_12px_rgba(168,85,247,0.03)] opacity-85"
+                    style={{
+                      animation: 'hero-rotate-cw 68s linear infinite',
+                    }}
+                  >
+                    <Network className="h-4 w-4 text-slate-400" />
+                  </div>
+                </div>
+              </div>
+
+              {/* ================= LAYER 1: FOREGROUND ORBIT (Closest, larger, higher contrast, fast speed) ================= */}
+              <div
+                className="absolute top-[40%] left-1/2 w-[550px] h-[220px] md:w-[720px] md:h-[280px] border border-t-indigo-500/[0.05] border-b-indigo-500/[0.035] border-l-transparent border-r-transparent rounded-full pointer-events-none"
+                style={{
+                  transform: 'translate(calc(-50% + var(--mx, 0) * 32px), calc(-50% + var(--my, 0) * 32px)) rotate(6deg)',
+                  transition: 'transform 0.65s cubic-bezier(0.16, 1, 0.3, 1)',
+                }}
+              >
+                {/* Fast Rotating Inner Group (48s orbit duration) */}
+                <div 
+                  className="absolute inset-0"
+                  style={{
+                    animation: 'hero-rotate-cw 48s linear infinite',
+                  }}
+                >
+                  {/* Premium Connection Line 3 */}
+                  <div 
+                    className="absolute top-1/2 left-[8%] right-[8%] h-[0.5px] bg-gradient-to-r from-transparent via-indigo-500/18 to-transparent"
+                    style={{
+                      transform: 'translateY(-50%) rotate(15deg)',
+                      animation: 'connection-pulse-slow 9s ease-in-out infinite 1s',
+                    }}
+                  />
+
+                  {/* Node Fore 1: PDF Document (FileText) - Slightly larger, high contrast, clean glow */}
+                  <div 
+                    className="absolute top-[8%] left-[12%] -translate-x-1/2 -translate-y-1/2 bg-slate-950 border border-slate-700/60 p-3 rounded-xl shadow-[0_0_20px_rgba(99,102,241,0.08)] scale-105"
+                    style={{
+                      animation: 'hero-rotate-ccw 48s linear infinite',
+                    }}
+                  >
+                    <FileText className="h-4.5 w-4.5 text-slate-200" />
+                  </div>
+
+                  {/* Node Fore 2: Concept Map (Brain) - Slightly larger, high contrast, clean glow */}
+                  <div 
+                    className="absolute bottom-[8%] right-[12%] translate-x-1/2 translate-y-1/2 bg-slate-950 border border-slate-700/60 p-3 rounded-xl shadow-[0_0_20px_rgba(168,85,247,0.08)] scale-105"
+                    style={{
+                      animation: 'hero-rotate-ccw 48s linear infinite',
+                    }}
+                  >
+                    <Brain className="h-4.5 w-4.5 text-slate-200" />
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
           {/* Subtle floating feature pill */}
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
@@ -259,8 +522,8 @@ export default function LandingPage({ onStart, onOpenApiKey, hasApiKey, onOpenHe
             transition={{ duration: 0.6, delay: 0.1 }}
             className="font-sans font-extrabold text-4xl sm:text-6xl lg:text-7xl tracking-tight text-white mb-6 max-w-4xl leading-[1.08]"
           >
-            From dense research papers into <br />
-            <span className="font-serif italic font-medium text-indigo-400 drop-shadow-sm">active understanding.</span>
+            Knowledge <br />
+            <span className="font-serif italic font-medium text-indigo-400 drop-shadow-sm">in motion.</span>
           </motion.h1>
 
           <motion.p 
@@ -269,7 +532,7 @@ export default function LandingPage({ onStart, onOpenApiKey, hasApiKey, onOpenHe
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-slate-400 text-xs sm:text-sm lg:text-base max-w-2xl leading-relaxed mb-8 font-medium"
           >
-            Upload a paper, textbook, lecture note, or research report. Menteea transforms source material into concept maps, grounded quizzes, study guides, and evidence-backed conversations — all traceable back to the original document.
+            Upload PDFs, papers, textbooks, and notes. Menteea transforms them into concept maps, grounded conversations, quizzes, and study guides.
           </motion.p>
 
           {/* Action Row */}
@@ -1563,6 +1826,7 @@ export default function LandingPage({ onStart, onOpenApiKey, hasApiKey, onOpenHe
     </div>
   );
 }
+
 
 
 

@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import crypto from "crypto";
 import { ChatService } from "../services/chatService";
 import { DocumentService } from "../services/documentService";
 import { chunkDocument } from "../rag/chunker";
@@ -18,15 +19,48 @@ export async function handleUpload(req: Request, res: Response) {
       return res.status(400).json({ error: "Document must contain pages with text." });
     }
 
-    // 1. Generate/Verify Document ID
+    // 1. Calculate SHA-256 hash of extracted combined pages text
+    const combinedText = pages.map((p: any) => p.text || "").join("\n\n");
+    const contentHash = crypto.createHash("sha256").update(combinedText).digest("hex");
+
+    // 2. Check if we already have this document processed and indexed in DocumentService
+    const documentService = DocumentService.getInstance();
+    const existingDoc = (documentId ? documentService.getDocument(documentId) : null) || 
+                        documentService.findMatchingDocument(contentHash);
+
+    if (existingDoc) {
+      logger.info(`[handleUpload] DEDUPLICATION DIAGNOSTICS:
+        * Generated SHA-256 Hash: ${contentHash}
+        * Cache Status: HIT (Document found in-memory store)
+        * Document Reuse Occurred: YES (Reusing existing ID "${existingDoc.id}")
+        * Summary Generation Skipped: YES (Reusing cached summary)
+        * Embedding Generation Skipped: YES (Reusing cached embeddings index)`);
+
+      return res.json({
+        documentId: existingDoc.id,
+        summary: existingDoc.summary || "Summary successfully retrieved from cache.",
+        topics: existingDoc.topics || ["Document Research"],
+        purpose: existingDoc.purpose || "Document loaded successfully from cache.",
+        suggestions: existingDoc.initialSuggestions || ["Give me an overview of this document", "What are the main key points?"],
+        summaryError: null
+      });
+    }
+
+    logger.info(`[handleUpload] DEDUPLICATION DIAGNOSTICS:
+      * Generated SHA-256 Hash: ${contentHash}
+      * Cache Status: MISS (No matching document found)
+      * Document Reuse Occurred: NO (Creating new document profile)
+      * Summary Generation Skipped: NO (Triggering Gemini summary generation)
+      * Embedding Generation Skipped: NO (Triggering chunks embedding generation)`);
+
+    // 3. Generate/Verify Document ID
     const id = documentId || Math.random().toString(36).substring(2, 9);
 
-    // 2. Process statistics through DocumentService
-    const documentService = DocumentService.getInstance();
+    // 4. Process statistics through DocumentService
     const stats = documentService.processDocumentPages(id, documentName, pages);
     logger.info(`[handleUpload] Document processed: pages=${stats.pageCount}, charCount=${stats.charCount}`);
 
-    // 3. Create and Store the Document Object
+    // 5. Create and Store the Document Object
     const docObj: Document = {
       id,
       name: documentName,
@@ -34,7 +68,8 @@ export async function handleUpload(req: Request, res: Response) {
         pageNumber: Number(p.pageNumber),
         text: (p.text || "").trim()
       })),
-      size
+      size,
+      contentHash
     };
     documentService.storeDocument(docObj);
 

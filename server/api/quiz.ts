@@ -50,6 +50,12 @@ export async function handleQuiz(req: Request, res: Response) {
       return res.status(404).json({ error: "Document not found in workspace." });
     }
 
+    // Return cached quiz if it exists
+    if (doc.cachedQuiz) {
+      logger.info(`[handleQuiz] Returning cached quiz for document: ${doc.name}`);
+      return res.json(doc.cachedQuiz);
+    }
+
     const documentContext = doc.pages
       .map((p) => `[Page ${p.pageNumber}]\n${p.text}`)
       .join("\n\n");
@@ -60,6 +66,9 @@ export async function handleQuiz(req: Request, res: Response) {
       doc.name,
       documentContext
     );
+
+    // Cache the generated quiz
+    doc.cachedQuiz = result;
 
     return res.json(result);
   } catch (error: any) {

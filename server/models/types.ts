@@ -13,6 +13,10 @@ export interface Document {
   purpose?: string;
   initialSuggestions?: string[];
   isSelected?: boolean;
+  cachedStudyGuide?: any;
+  cachedMindMap?: any;
+  cachedQuiz?: any;
+  contentHash?: string;
 }
 
 export interface Chunk {

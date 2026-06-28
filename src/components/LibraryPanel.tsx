@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Upload, FileText, Check, Plus, Loader2, Sparkles, AlertCircle, Trash2 } from "lucide-react";
 import { DocumentFile } from "../types";
+import { storePdfBuffer } from "../utils/pdfDb";
 
 interface LibraryPanelProps {
   documents: DocumentFile[];
@@ -39,6 +40,25 @@ export default function LibraryPanel({
       return;
     }
 
+    // Guard 1: Prevent oversized file uploads (Max 25 MB)
+    const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
+    if (file.size > MAX_FILE_SIZE) {
+      onUploadError("This document exceeds the recommended size limits for Menteea. Please upload a smaller document for the best experience.");
+      return;
+    }
+
+    const formattedSize = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+    const existingLocal = documents.find(
+      (d) => d.name === file.name && d.size === formattedSize
+    );
+    if (existingLocal) {
+      onSelectDocForViewer(existingLocal.id);
+      if (!existingLocal.isSelected) {
+        onToggleDocSelection(existingLocal.id);
+      }
+      return;
+    }
+
     onUploadStart();
     setLocalProgress("Initializing parser...");
 
@@ -66,7 +86,16 @@ export default function LibraryPanel({
       const pdf = await loadingTask.promise;
       const numPages = pdf.numPages;
 
+      // Guard 2: Prevent extremely large page counts (Max 1000 pages)
+      const MAX_PAGE_COUNT = 1000;
+      if (numPages > MAX_PAGE_COUNT) {
+        onUploadError("This document exceeds the recommended size limits for Menteea. Please upload a smaller document for the best experience.");
+        return;
+      }
+
       const pagesData: Array<{ pageNumber: number; text: string }> = [];
+      let totalTextLength = 0;
+      const MAX_TEXT_LENGTH = 1500000; // Guard 3: Max 1.5 million characters (approx 250,000 words)
 
       // 3. Extract text from each page
       for (let i = 1; i <= numPages; i++) {
@@ -78,6 +107,13 @@ export default function LibraryPanel({
           .join(" ")
           .replace(/\s+/g, " ")
           .trim();
+        
+        totalTextLength += text.length;
+        if (totalTextLength > MAX_TEXT_LENGTH) {
+          onUploadError("This document exceeds the recommended size limits for Menteea. Please upload a smaller document for the best experience.");
+          return;
+        }
+
         pagesData.push({ pageNumber: i, text: text });
       }
 
@@ -85,8 +121,8 @@ export default function LibraryPanel({
       if (!(window as any)._pdfBuffers) {
         (window as any)._pdfBuffers = new Map<string, ArrayBuffer>();
       }
-      const docId = Math.random().toString(36).substring(2, 9);
-      (window as any)._pdfBuffers.set(docId, arrayBuffer.slice(0));
+      const tempDocId = Math.random().toString(36).substring(2, 9);
+      (window as any)._pdfBuffers.set(tempDocId, arrayBuffer.slice(0));
 
       // 4. Summarize via Backend Express API
       setLocalProgress("Generating document summary with Gemini...");
@@ -100,6 +136,8 @@ export default function LibraryPanel({
         summaryError: undefined as string | undefined
       };
 
+      let resolvedDocId = tempDocId;
+
       try {
         const headers: Record<string, string> = {
           "Content-Type": "application/json",
@@ -112,10 +150,10 @@ export default function LibraryPanel({
           method: "POST",
           headers,
           body: JSON.stringify({
-            documentId: docId,
+            documentId: tempDocId,
             documentName: file.name,
             pages: pagesData,
-            size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+            size: formattedSize
           }),
         });
 
@@ -128,6 +166,9 @@ export default function LibraryPanel({
             suggestions: data.suggestions || summaryResult.suggestions,
             summaryError: data.summaryError || undefined
           };
+          if (data.documentId) {
+            resolvedDocId = data.documentId;
+          }
         } else {
           console.warn("Summarization API responded with an error, falling back to basic details.");
           try {
@@ -146,9 +187,30 @@ export default function LibraryPanel({
         summaryResult.summaryError = "Network error during AI summary generation.";
       }
 
+      // Re-key PDF buffer if the ID returned by the backend differs
+      if (resolvedDocId !== tempDocId) {
+        const buf = (window as any)._pdfBuffers.get(tempDocId);
+        if (buf) {
+          (window as any)._pdfBuffers.set(resolvedDocId, buf);
+          (window as any)._pdfBuffers.delete(tempDocId);
+        }
+      }
+
+      // Persist the PDF buffer inside IndexedDB for offline page reload persistence
+      const finalBuf = (window as any)._pdfBuffers?.get(resolvedDocId);
+      if (finalBuf) {
+        try {
+          await storePdfBuffer(resolvedDocId, finalBuf);
+        } catch (dbErr) {
+          console.error(`[LibraryPanel] Failed to store PDF buffer in IndexedDB for document ID="${resolvedDocId}":`, dbErr);
+        }
+      } else {
+        console.warn(`[LibraryPanel] No PDF buffer found in window._pdfBuffers for document ID="${resolvedDocId}" during persistence attempt!`);
+      }
+
       // Formulate our final DocumentFile structure
       const newDoc: DocumentFile = {
-        id: docId,
+        id: resolvedDocId,
         name: file.name,
         pages: pagesData,
         summary: summaryResult.summary,
@@ -158,7 +220,7 @@ export default function LibraryPanel({
         summaryError: summaryResult.summaryError,
         uploadTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         isSelected: true, // Automatically select for chat
-        size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+        size: formattedSize,
       };
 
       onUploadEnd(newDoc);
@@ -173,6 +235,7 @@ export default function LibraryPanel({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       processPdfFile(e.target.files[0]);
+      e.target.value = ""; // Clear input value so selecting the same file again triggers change event
     }
   };
 

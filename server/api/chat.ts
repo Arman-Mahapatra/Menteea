@@ -87,14 +87,20 @@ export async function handleChat(req: Request, res: Response) {
     // Format resolved documents into contextual prompt block
     let docsContext = "";
     if (resolvedDocs.length > 0) {
-      docsContext = "Here is the content of the selected documents you must reason across:\n\n";
-      resolvedDocs.forEach((doc) => {
-        docsContext += `<document name="${doc.name}">\n`;
-        doc.pages.forEach((page) => {
-          docsContext += `<page number="${page.pageNumber}">\n${page.text}\n</page>\n`;
+      if (docIdsToLookup.length > 0) {
+        // Since we are running optimized RAG chunk lookup, we don't need to load and
+        // serialize the full text of all pages into memory here. This saves massive RAM and latency.
+        docsContext = `Selected documents: ${resolvedDocs.map(d => d.name).join(", ")}`;
+      } else {
+        docsContext = "Here is the content of the selected documents you must reason across:\n\n";
+        resolvedDocs.forEach((doc) => {
+          docsContext += `<document name="${doc.name}">\n`;
+          doc.pages.forEach((page) => {
+            docsContext += `<page number="${page.pageNumber}">\n${page.text}\n</page>\n`;
+          });
+          docsContext += `</document>\n\n`;
         });
-        docsContext += `</document>\n\n`;
-      });
+      }
     } else {
       docsContext = "No documents are currently selected. Answer using general knowledge directly and naturally. Do NOT mention that no documents are selected or that you are using general knowledge.";
     }
@@ -102,7 +108,11 @@ export async function handleChat(req: Request, res: Response) {
     const lastMessage = messages[messages.length - 1].content;
     const previousMessages = messages.slice(0, messages.length - 1);
 
-    const formattedHistory = previousMessages.map((m: any) => {
+    // Limit conversation history to the last 6 messages (3 turns) to keep token footprint low and speed up response generation
+    const MAX_HISTORY_MESSAGES = 6;
+    const trimmedPreviousMessages = previousMessages.slice(-MAX_HISTORY_MESSAGES);
+
+    const formattedHistory = trimmedPreviousMessages.map((m: any) => {
       return `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`;
     }).join("\n");
 

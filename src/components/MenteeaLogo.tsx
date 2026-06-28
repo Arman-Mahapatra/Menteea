@@ -96,16 +96,16 @@ export function MenteeaLogo({ showVersion = true, size = 26, className = "", dar
 
       {/* Modern Premium Wordmark */}
       <div className="flex items-center gap-1.5 leading-none">
-        <span className={`font-sans font-bold text-lg tracking-tight ${darkBg ? "text-white dark:text-slate-100" : "text-text-primary dark:text-slate-100"}`}>
+        <span className={`font-sans font-black text-lg tracking-tight ${darkBg ? "text-white dark:text-slate-50" : "text-black dark:text-slate-50"}`}>
           Menteea
         </span>
         
         {/* Subtle, High-Quality Version Badge */}
         {showVersion && (
-          <span className={`text-[9px] font-mono font-semibold tracking-wide border px-1.5 py-0.5 rounded ml-1 ${
+          <span className={`text-[9px] font-mono font-extrabold tracking-wide border px-1.5 py-0.5 rounded ml-1 ${
             darkBg 
-              ? "bg-slate-900/40 border-slate-800 text-slate-500" 
-              : "bg-bg-secondary border-border-custom text-text-muted dark:bg-slate-900/60 dark:border-slate-800 dark:text-slate-500"
+              ? "bg-slate-900/40 border-slate-800 text-slate-400" 
+              : "bg-slate-200 border-slate-950 text-neutral-950 dark:bg-slate-900/60 dark:border-slate-800 dark:text-slate-400"
           }`}>
             v1.0
           </span>

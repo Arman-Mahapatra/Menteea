@@ -11,6 +11,7 @@ import StudyGuidePanel from "./components/StudyGuidePanel";
 import HelpCenterModal from "./components/HelpCenterModal";
 import { DocumentFile, ChatMessage } from "./types";
 import { Sparkles, Key, RefreshCw, LogOut, FileText, AlertTriangle, X, Sun, Moon, ExternalLink, HelpCircle } from "lucide-react";
+import { deletePdfBuffer, clearAllPdfBuffers } from "./utils/pdfDb";
 
 export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -181,6 +182,11 @@ export default function App() {
     if ((window as any)._pdfBuffers) {
       (window as any)._pdfBuffers.delete(id);
     }
+    
+    // Also delete the PDF buffer from IndexedDB persistent storage
+    deletePdfBuffer(id).catch((err) => {
+      console.error("[App] Failed to delete PDF from IndexedDB:", err);
+    });
 
     setDocuments((prev) => {
       const updated = prev.filter((doc) => doc.id !== id);
@@ -213,13 +219,9 @@ export default function App() {
     setViewerPageNumber(1);
     setIsLoading(false);
 
-    if (newDoc.summaryError) {
-      setErrorAlert(newDoc.summaryError);
-    }
-
-    // Create introductory lightweight message in the chat (Task 3)
+    // Create introductory lightweight message in the chat
     const introContent = newDoc.summaryError
-      ? `✓ Document indexed successfully.\n\n⚠️ AI Summary generation failed: ${newDoc.summaryError}\n\nReady to answer questions.`
+      ? `Document indexed successfully.\n\nThe document has been fully processed and is ready for research.\n\nA summary could not be generated at this time due to temporary AI service availability.\n\nYou can still:\n✓ Ask questions\n✓ Generate study guides\n✓ Create quizzes\n✓ Explore the document\n\nTry generating a summary again later.`
       : `✓ Document indexed successfully.\n\nReady to answer questions.`;
 
     const summaryMsg: ChatMessage = {
@@ -418,6 +420,11 @@ export default function App() {
       if ((window as any)._pdfBuffers) {
         (window as any)._pdfBuffers.clear();
       }
+      
+      // Also clear all persisted PDF buffers from IndexedDB
+      clearAllPdfBuffers().catch((err) => {
+        console.error("[App] Failed to clear IndexedDB PDF buffers:", err);
+      });
     }
   };
 

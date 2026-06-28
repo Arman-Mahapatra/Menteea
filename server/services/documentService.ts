@@ -1,5 +1,6 @@
 import { Document, Page } from "../models/types";
 import { VectorStore } from "./vectorStore";
+import { RetrievalService } from "./retrievalService";
 import { logger } from "../utils/logger";
 
 export class DocumentService {
@@ -24,6 +25,11 @@ export class DocumentService {
   public storeDocument(doc: Document): void {
     logger.info(`[DocumentService] Storing document in single source of truth: ID=${doc.id}, Name="${doc.name}"`);
     this.documents.set(doc.id, doc);
+    try {
+      RetrievalService.getInstance().invalidateDocumentCache(doc.id);
+    } catch (err) {
+      logger.error(`[DocumentService] Failed to invalidate cache on store for document ID ${doc.id}:`, err);
+    }
   }
 
   /**
@@ -31,6 +37,19 @@ export class DocumentService {
    */
   public getDocument(id: string): Document | undefined {
     return this.documents.get(id);
+  }
+
+  /**
+   * Finds a stored document matching content hash to prevent duplicate ingestion.
+   */
+  public findMatchingDocument(contentHash: string): Document | undefined {
+    if (!contentHash) return undefined;
+    for (const doc of this.documents.values()) {
+      if (doc.contentHash === contentHash) {
+        return doc;
+      }
+    }
+    return undefined;
   }
 
   /**
@@ -57,6 +76,11 @@ export class DocumentService {
   public async deleteDocument(documentId: string): Promise<void> {
     logger.info(`[DocumentService] Deleting document metadata and indexes for ID: ${documentId}`);
     this.documents.delete(documentId);
+    try {
+      RetrievalService.getInstance().invalidateDocumentCache(documentId);
+    } catch (err) {
+      logger.error(`[DocumentService] Failed to invalidate cache on delete for document ID ${documentId}:`, err);
+    }
     await this.vectorStore.deleteDocument(documentId);
   }
 }

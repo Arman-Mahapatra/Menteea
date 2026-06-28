@@ -14,6 +14,7 @@ import {
   ChevronDown
 } from "lucide-react";
 import { DocumentFile } from "../types";
+import { getPdfBuffer } from "../utils/pdfDb";
 
 interface PDFViewerPanelProps {
   documentId: string | null;
@@ -48,8 +49,23 @@ export default function PDFViewerPanel({
   const renderTaskRef = useRef<any>(null);
 
   const [pdfDocument, setPdfDocument] = useState<any>(null);
-  const [zoomMode, setZoomMode] = useState<ZoomMode>("fit-width");
-  const [scale, setScale] = useState(1.0);
+  const [zoomMode, setZoomMode] = useState<ZoomMode>(() => {
+    const saved = localStorage.getItem("menteea_viewer_zoom_mode");
+    return (saved as ZoomMode) || "fit-width";
+  });
+  const [scale, setScale] = useState<number>(() => {
+    const saved = localStorage.getItem("menteea_viewer_scale");
+    return saved ? parseFloat(saved) : 1.0;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("menteea_viewer_zoom_mode", zoomMode);
+  }, [zoomMode]);
+
+  useEffect(() => {
+    localStorage.setItem("menteea_viewer_scale", scale.toString());
+  }, [scale]);
+
   const [isRendering, setIsRendering] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -101,8 +117,24 @@ export default function PDFViewerPanel({
           globalBuffers = (window as any)._pdfBuffers;
         }
 
-        const buffer = globalBuffers.get(documentId);
+        let buffer = globalBuffers.get(documentId);
+
         if (!buffer) {
+          try {
+            const dbBuffer = await getPdfBuffer(documentId);
+            if (dbBuffer) {
+              globalBuffers.set(documentId, dbBuffer);
+              buffer = dbBuffer;
+            } else {
+              console.warn(`[PDFViewerPanel:loadPdf] IndexedDB returned NULL/UNDEFINED for documentId="${documentId}".`);
+            }
+          } catch (dbErr) {
+            console.error(`[PDFViewerPanel:loadPdf] Error loading PDF buffer from IndexedDB for "${documentId}":`, dbErr);
+          }
+        }
+
+        if (!buffer) {
+          console.warn(`[PDFViewerPanel:loadPdf] PDF buffer is completely unavailable for documentId="${documentId}". pageText is:`, pageText);
           if (pageText !== undefined) {
             setIsTextFallback(true);
             setPdfDocument(null);
@@ -124,6 +156,9 @@ export default function PDFViewerPanel({
       } catch (err: any) {
         console.error("PDF load error:", err);
         setErrorMsg(err.message || "Failed to load PDF document.");
+        if (pageText !== undefined) {
+          setIsTextFallback(true);
+        }
       } finally {
         setIsRendering(false);
       }
@@ -586,4 +621,3 @@ export default function PDFViewerPanel({
     </div>
   );
 }
-

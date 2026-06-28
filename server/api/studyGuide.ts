@@ -50,6 +50,12 @@ export async function handleStudyGuide(req: Request, res: Response) {
       return res.status(404).json({ error: "Document not found in workspace." });
     }
 
+    // Return cached study guide if it exists
+    if (doc.cachedStudyGuide) {
+      logger.info(`[handleStudyGuide] Returning cached study guide for document: ${doc.name}`);
+      return res.json(doc.cachedStudyGuide);
+    }
+
     const documentContext = doc.pages
       .map((p) => `[Page ${p.pageNumber}]\n${p.text}`)
       .join("\n\n");
@@ -60,6 +66,9 @@ export async function handleStudyGuide(req: Request, res: Response) {
       doc.name,
       documentContext
     );
+
+    // Cache the generated study guide
+    doc.cachedStudyGuide = result;
 
     return res.json(result);
   } catch (error: any) {

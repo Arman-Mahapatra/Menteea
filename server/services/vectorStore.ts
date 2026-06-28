@@ -102,6 +102,20 @@ export class VectorStore {
       logger.info(`  [Top ${idx + 1}] Chunk ID: ${cand.chunk.id}, Doc ID: ${cand.chunk.documentId}, Similarity Score: ${cand.score.toFixed(4)}`);
     });
 
+    // Smart Retrieval: Reduce chunk count when confidence is high
+    if (results.length > 0) {
+      const topScore = results[0].score;
+      let optimizedLimit = limit;
+      if (topScore > 0.82) {
+        optimizedLimit = Math.max(2, Math.min(limit, 3)); // If extremely relevant, 2 or 3 chunks are plenty!
+        logger.info(`[SmartRetrieval] Confidence is very high (${topScore.toFixed(4)}). Optimizing context by reducing chunk limit from ${limit} to ${optimizedLimit}.`);
+      } else if (topScore > 0.68) {
+        optimizedLimit = Math.max(3, Math.min(limit, 4)); // 3 or 4 chunks
+        logger.info(`[SmartRetrieval] Confidence is high (${topScore.toFixed(4)}). Optimizing context by reducing chunk limit from ${limit} to ${optimizedLimit}.`);
+      }
+      return results.slice(0, optimizedLimit).map(r => r.chunk);
+    }
+
     return results.map(r => r.chunk);
   }
 

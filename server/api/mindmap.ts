@@ -52,6 +52,12 @@ export async function handleMindMap(req: Request, res: Response) {
       return res.status(404).json({ error: "Document not found in workspace." });
     }
 
+    // Return cached mind map if it exists
+    if (doc.cachedMindMap) {
+      logger.info(`[handleMindMap] Returning cached mind map for document: ${doc.name}`);
+      return res.json(doc.cachedMindMap);
+    }
+
     const documentContext = doc.pages
       .map((p) => `[Page ${p.pageNumber}]\n${p.text}`)
       .join("\n\n");
@@ -62,6 +68,9 @@ export async function handleMindMap(req: Request, res: Response) {
       doc.name,
       documentContext
     );
+
+    // Cache the generated mind map
+    doc.cachedMindMap = result;
 
     return res.json(result);
   } catch (error: any) {
